@@ -1,0 +1,29 @@
+{
+  "a": {
+    "applications": ["application_a", "application_b"],
+    "dependencies": {
+      "public": {
+        "dependencySemvers": {
+          "dep_a": {
+            "dateAdded": 1560081600000,
+            "semver": "dep_a@1.0.0"
+          },
+          "dep_b": {
+            "dateAdded": 1560081600000,
+            "semver": "dep_b@2.0.0"
+          }
+        },
+        "gracePeriod": Infinity
+      },
+      "private": {
+        "dependencySemvers": {
+          "dep_c": {
+            "dateAdded": 1560081600000,
+            "semver": "dep_c@3.0.0"
+          }
+        },
+        "gracePeriod": Infinity
+      }
+    }
+  }
+}

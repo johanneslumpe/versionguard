@@ -1,0 +1,6 @@
+{
+  "a": {
+    "applications": ["application_a", "application_b"],
+    "dependencies": {}
+  }
+}

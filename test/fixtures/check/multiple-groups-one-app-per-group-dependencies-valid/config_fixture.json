@@ -1,0 +1,56 @@
+{
+  "a": {
+    "applications": ["application_a"],
+    "dependencies": {
+      "public": {
+        "dependencySemvers": {
+          "dep_a": {
+            "dateAdded": 1560081600000,
+            "semver": "dep_a@1.x"
+          },
+          "dep_b": {
+            "dateAdded": 1560081600000,
+            "semver": "dep_b@1.x"
+          }
+        },
+        "gracePeriod": Infinity
+      },
+      "private": {
+        "dependencySemvers": {
+          "dep_c": {
+            "dateAdded": 1560081600000,
+            "semver": "dep_c@1.x"
+          }
+        },
+        "gracePeriod": Infinity
+      }
+    }
+  },
+  "b": {
+    "applications": ["application_b"],
+    "dependencies": {
+      "public": {
+        "dependencySemvers": {
+          "dep_a": {
+            "dateAdded": 1560081600000,
+            "semver": "dep_a@1.x"
+          },
+          "dep_b": {
+            "dateAdded": 1560081600000,
+            "semver": "dep_b@1.x"
+          }
+        },
+        "gracePeriod": Infinity
+      },
+      "private": {
+        "dependencySemvers": {
+          "dep_c": {
+            "dateAdded": 1560081600000,
+            "semver": "dep_c@1.x"
+          }
+        },
+        "gracePeriod": Infinity
+      }
+    }
+  }
+}

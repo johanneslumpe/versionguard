@@ -1,0 +1,20 @@
+{
+  "a": {
+    "applications": ["application_a"],
+    "dependencies": {
+      "public": {
+        "dependencySemvers": {
+          "dep_a": {
+            "dateAdded": 1560081600000,
+            "semver": "dep_a@1.0.0"
+          }
+        },
+        "gracePeriod": Infinity
+      },
+      "private": {
+        "dependencySemvers": {},
+        "gracePeriod": Infinity
+      }
+    }
+  }
+}

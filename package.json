@@ -1,0 +1,80 @@
+{
+  "name": "@johanneslumpe/version-guard",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "bin": {
+    "versionguard": "./lib/cli/index.js"
+  },
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint \"src/**/*.ts\" && eslint \"test/**/*.ts\"",
+    "typecheck": "tsc -p ./tsconfig.build.json --noEmit",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "build": "rm -rf ./lib && tsc -p ./tsconfig.build.json",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test && npm run lint",
+    "prerelease": "npm run lint && npm run test && npm run docs && git add -A ./docs && git commit -m 'chore: update docs'",
+    "release": "standard-version",
+    "postrelease": "git push --follow-tags origin master"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint && npm run format",
+      "pre-push": "npm test"
+    }
+  },
+  "files": [
+    "/lib"
+  ],
+  "keywords": [],
+  "author": "Johannes Lumpe",
+  "bugs": {
+    "url": "https://github.com/johanneslumpe/versionguard/issues"
+  },
+  "homepage": "https://github.com/johanneslumpe/versionguard",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^2.4.2",
+    "cli-table3": "^0.5.1",
+    "find-up": "^4.0.0",
+    "humanize-duration": "^3.18.0",
+    "inquirer": "^6.3.1",
+    "json5": "^2.1.0",
+    "lodash": "^4.17.11",
+    "log-symbols": "^3.0.0",
+    "pluralize": "^8.0.0",
+    "semver": "^6.1.1",
+    "yargs": "^13.2.4"
+  },
+  "devDependencies": {
+    "@types/glob": "^7.1.1",
+    "@types/humanize-duration": "^3.18.0",
+    "@types/inquirer": "^6.0.3",
+    "@types/jest": "^24.0.13",
+    "@types/json5": "0.0.30",
+    "@types/lodash": "^4.14.134",
+    "@types/node": "^12.0.4",
+    "@types/pluralize": "0.0.29",
+    "@types/semver": "^6.0.0",
+    "@types/std-mocks": "^1.0.0",
+    "@types/strip-ansi": "^5.2.1",
+    "@types/yargs": "^13.0.0",
+    "@typescript-eslint/eslint-plugin": "^1.9.0",
+    "@typescript-eslint/parser": "^1.9.0",
+    "eslint": "^5.16.0",
+    "eslint-config-prettier": "^4.3.0",
+    "eslint-plugin-prettier": "^3.1.0",
+    "glob": "^7.1.4",
+    "husky": "^2.4.0",
+    "jest": "^24.8.0",
+    "mock-stdin": "^0.3.1",
+    "prettier": "^1.18.2",
+    "standard-version": "^6.0.1",
+    "std-mocks": "^1.0.1",
+    "strip-ansi": "^5.2.0",
+    "ts-jest": "^24.0.2",
+    "ts-node": "^8.2.0",
+    "typescript": "^3.5.1"
+  }
+}

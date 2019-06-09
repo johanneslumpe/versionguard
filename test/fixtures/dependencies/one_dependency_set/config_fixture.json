@@ -1,0 +1,8 @@
+{
+  "a": {
+    "applications": [],
+    "dependencies": {
+      "set_a": { "dependencySemvers": {}, "gracePeriod": Infinity }
+    }
+  }
+}

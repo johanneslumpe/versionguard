@@ -29,6 +29,7 @@ export function removeApplicationCommand(
         const { config, groupname, applicationpaths } = argv;
         const updatedConfig = await removeApplication({
           config: config.contents,
+          configPath: config.path,
           groupName: groupname,
           relativePaths: applicationpaths,
         });

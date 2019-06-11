@@ -1,7 +1,12 @@
 import path from 'path';
 import fs from 'fs';
 
-import { emphasize, getGroupConfig, isNodeJSError } from '../utils';
+import {
+  emphasize,
+  getGroupConfig,
+  isNodeJSError,
+  normalizePaths,
+} from '../utils';
 import { VersionGuardConfig } from '../config';
 import { VersionGuardError } from '../errors';
 
@@ -44,20 +49,20 @@ export async function addApplications({
   config,
 }: AddApplicationOptions): Promise<VersionGuardConfig> {
   const groupConfig = getGroupConfig(groupName, config);
-  relativePaths.forEach(relativePath => {
+  const normalizedPaths = normalizePaths({ configPath, relativePaths });
+  normalizedPaths.forEach(relativePath => {
     if (groupConfig.applications.includes(relativePath)) {
       throw VersionGuardError.from(
         emphasize`Group ${groupName} already includes application with path ${relativePath}`,
       );
     }
   });
-  await ensurePackageJsonsExist(path.dirname(configPath), relativePaths);
-
+  await ensurePackageJsonsExist(path.dirname(configPath), normalizedPaths);
   return {
     ...config,
     [groupName]: {
       ...groupConfig,
-      applications: groupConfig.applications.concat(relativePaths),
+      applications: groupConfig.applications.concat(normalizedPaths),
     },
   };
 }

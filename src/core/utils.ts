@@ -1,5 +1,6 @@
 import chalk from 'chalk';
-import semver, { SemVer } from 'semver';
+import semver from 'semver';
+import path from 'path';
 
 import { VersionGuardConfig } from './config';
 import { GroupConfig } from './groups';
@@ -75,4 +76,20 @@ export function getMinSemverVersionOrThrow(
     );
   }
   return minVersion;
+}
+
+export function normalizePaths({
+  configPath,
+  relativePaths,
+}: {
+  configPath: string;
+  relativePaths: string[];
+}): string[] {
+  const configBase = path.dirname(configPath);
+  const paths = relativePaths.map(p =>
+    // combining `path.resolve` with `path.relative` in this way
+    // gets rid of any trailing slashes that may exist on `p`
+    path.relative(configBase, path.resolve(configBase, p)),
+  );
+  return paths;
 }

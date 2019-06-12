@@ -1,6 +1,6 @@
 {
-  "a": {
-    "applications": ["application_a"],
+  "all-valid-a": {
+    "applications": ["application_a", "application_b"],
     "dependencies": {
       "public": {
         "dependencySemvers": {

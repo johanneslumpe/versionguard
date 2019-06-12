@@ -1,16 +1,16 @@
 {
-  "a": {
-    "applications": ["application_a"],
+  "all-invalid-a": {
+    "applications": ["application_a", "application_b"],
     "dependencies": {
       "public": {
         "dependencySemvers": {
           "dep_a": {
             "dateAdded": 1560081600000,
-            "semver": "dep_a@1.x"
+            "semver": "dep_a@3.x"
           },
           "dep_b": {
             "dateAdded": 1560081600000,
-            "semver": "dep_b@1.x"
+            "semver": "dep_b@3.x"
           }
         },
         "gracePeriod": Infinity
@@ -19,7 +19,7 @@
         "dependencySemvers": {
           "dep_c": {
             "dateAdded": 1560081600000,
-            "semver": "dep_c@1.x"
+            "semver": "dep_c@3.x"
           }
         },
         "gracePeriod": Infinity

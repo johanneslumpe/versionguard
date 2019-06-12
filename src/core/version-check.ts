@@ -64,16 +64,14 @@ async function readPackageJsons({
 
 function invalidGroupsInvariant({
   config,
-  availableGroups,
+  groups,
 }: {
   config: VersionGuardConfig;
-  availableGroups: string[];
+  groups: string[];
 }): void {
   const allGroups = Object.keys(config);
-  if (availableGroups.length) {
-    const invalidGroups = availableGroups.filter(
-      group => !allGroups.includes(group),
-    );
+  if (groups.length) {
+    const invalidGroups = groups.filter(group => !allGroups.includes(group));
     if (invalidGroups.length) {
       throw VersionGuardError.from(
         `${pluralize(
@@ -88,37 +86,55 @@ function invalidGroupsInvariant({
 export async function checkDependencies({
   config,
   configPath,
-  groupsToCheck,
+  groups,
+  sets,
+  applications,
 }: {
   config: VersionGuardConfig;
   configPath: string;
-  groupsToCheck: string[];
+  groups: string[];
+  sets: string[];
+  applications: string[];
 }): Promise<Readonly<CheckResult>> {
-  const availableGroups = Object.keys(config);
-  invalidGroupsInvariant({ config, availableGroups });
-  const groups = availableGroups.filter(
-    group => !groupsToCheck.length || groupsToCheck.includes(group),
-  );
+  invalidGroupsInvariant({ config, groups: groups });
   const groupResults: Dictionary<GroupCheckResult> = {};
-  const applicationDependencyResults: Dictionary<ApplicationResult> = {};
   let allGroupsPassed = true;
   // TODO refactor
-  for (const group of groups) {
-    const groupConfig = config[group];
-    const { applications, dependencies } = groupConfig;
+  const allEntries = Object.entries(config);
+  const entriesToCheck = !groups.length
+    ? allEntries
+    : allEntries.filter(([group]) => groups.includes(group));
+
+  for (const [group, groupConfig] of entriesToCheck) {
+    const applicationDependencyResults: Dictionary<ApplicationResult> = {};
+    const { applications: availableApplications, dependencies } = groupConfig;
+    const applicationsToCheck = applications.length
+      ? availableApplications.filter(app => applications.includes(app))
+      : availableApplications;
+    // this group does not contain any applications we want to check
+    if (!applicationsToCheck.length) {
+      continue;
+    }
+    const availableDependencySets = Object.entries(dependencies);
+    const dependencySetsToCheck = sets.length
+      ? availableDependencySets.filter(([setName]) => sets.includes(setName))
+      : availableDependencySets;
+    // this group does not contain any dependency sets we want to check
+    if (!dependencySetsToCheck.length) {
+      continue;
+    }
     const dependenciesByApplication = await readPackageJsons({
       configPath,
-      applications,
+      applications: applicationsToCheck,
     });
-    const dependencySets = Object.keys(dependencies);
     let groupPassed = true;
-    for (const setKey of dependencySets) {
-      const setConfig = dependencies[setKey];
+
+    for (const [, setConfig] of dependencySetsToCheck) {
       for (const dependency of Object.keys(setConfig.dependencySemvers)) {
         const [, requiredDependencyVersion] = setConfig.dependencySemvers[
           dependency
         ].semver.split('@');
-        for (const application of applications) {
+        for (const application of applicationsToCheck) {
           const dependencyVersion =
             dependenciesByApplication[application][dependency];
           const dependencySatisfied = semver.satisfies(

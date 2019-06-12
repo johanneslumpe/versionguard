@@ -64,23 +64,52 @@ export function versionCheckCommand(
   yargs: ArgvWithGlobalOptions,
 ): ArgvWithGlobalOptions {
   return yargs.command(
-    'check [groups..]',
+    'check',
     'check dependencies for given groups',
     yargs =>
-      yargs
-        .positional('groups', {
-          describe: 'groups to check dependencies for',
-        })
-        .string('groups')
-        .array('groups'),
+      yargs.options({
+        group: {
+          array: true,
+          description: 'groups to check',
+          type: 'string',
+          default: [] as string[],
+        },
+        app: {
+          array: true,
+          description: 'applications to check',
+          type: 'string',
+          default: [] as string[],
+        },
+        set: {
+          array: true,
+          description: 'sets to check',
+          type: 'string',
+          default: [] as string[],
+        },
+      }),
     argv => {
       argv._asyncResult = (async () => {
-        const { config, verbose, groups } = argv;
+        const { config, verbose, group, set, app } = argv;
         const result = await checkDependencies({
           config: config.contents,
           configPath: config.path,
-          groupsToCheck: groups,
+          groups: group,
+          sets: set,
+          applications: app,
         });
+
+        // TODO support --json
+        // format:
+        // {
+        //   failed: [{
+        //     application: string;
+        //     applicationPath: string;
+        //     dependencies: string[];
+        //   }]
+        //  passed: [{
+        //    same as above
+        // }]
+        // }
 
         if (verbose) {
           const tables = Object.entries(result.groupResults).reduce(
@@ -103,9 +132,15 @@ export function versionCheckCommand(
         }
 
         if (!result.passed) {
-          const groups = Object.keys(result.groupResults);
+          const groups = Object.entries(result.groupResults);
+          const failedGroups = groups
+            .filter(([, groupResult]) => !groupResult.passed)
+            .map(([group]) => group);
           throw VersionGuardError.from(
-            `${pluralize('Group', groups.length)} ${emphasize`${groups.join(
+            `${pluralize(
+              'Group',
+              failedGroups.length,
+            )} ${emphasize`${failedGroups.join(
               ', ',
             )} did not meet dependency version requirements`}`,
           );

@@ -1,8 +1,0 @@
-{
-  "name": "application-b",
-  "dependencies": {
-    "dep_a": "^1.5.0",
-    "dep_b": "1.6.3",
-    "dep_c": "~1.7.0"
-  }
-}

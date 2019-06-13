@@ -35,13 +35,12 @@ export function addApplicationCommand(
         });
         await writeConfig(config.path, updatedConfig);
         success(
-          emphasize`${pluralize(
-            'Application',
-            applicationpaths.length,
-          )} in ${pluralize(
+          `${pluralize('Application', applicationpaths.length)} in ${pluralize(
             'path',
             applicationpaths.length,
-          )} ${applicationpaths.join(', ')} added to group ${groupname}`,
+          )} ${emphasize`${applicationpaths.join(
+            ', ',
+          )}`} added to group ${groupname}`,
         );
       })();
     },

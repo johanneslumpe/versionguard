@@ -102,7 +102,7 @@ export function addDependencyCommand(
         }
 
         if (updatedConfig) {
-          await writeConfig(config.path, updatedConfig);
+          await writeConfig(config.path)(updatedConfig).run();
           switch (changeType) {
             case 'ADDED_TO_SET':
               success(

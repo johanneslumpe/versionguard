@@ -20,7 +20,7 @@ export function removeGroupCommand(
       argv._asyncResult = (async () => {
         const { groupname } = argv;
         const config = removeGroup(groupname, argv.config.contents);
-        await writeConfig(argv.config.path, config);
+        await writeConfig(argv.config.path)(config).run();
         success(emphasize`Group ${groupname} removed!`);
       })();
     },

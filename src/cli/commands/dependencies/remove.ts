@@ -33,7 +33,7 @@ export function removeDependencyCommand(
           groupName: groupname,
           setName: setname,
         });
-        await writeConfig(config.path, updatedConfig);
+        await writeConfig(config.path)(updatedConfig).run();
         success(
           emphasize`Dependency ${dependency} successfully removed from set ${setname} within group ${groupname}`,
         );

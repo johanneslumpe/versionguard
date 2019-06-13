@@ -1,3 +1,5 @@
+import { Either, left, right } from 'fp-ts/lib/Either';
+
 import { VersionGuardConfig } from '../config';
 import { emphasize } from '../utils';
 import { DependencySetConfig } from '../dependencies/create-set';
@@ -19,13 +21,15 @@ export interface GroupConfig {
 export function addGroup(
   groupname: string,
   config: VersionGuardConfig,
-): VersionGuardConfig {
+): Either<VersionGuardError, VersionGuardConfig> {
   if (config[groupname]) {
-    throw VersionGuardError.from(emphasize`Group ${groupname} already exists`);
+    return left(
+      VersionGuardError.from(emphasize`Group ${groupname} already exists`),
+    );
   }
 
-  return {
+  return right({
     ...config,
     [groupname]: createEmptyGroupConfig(),
-  };
+  });
 }

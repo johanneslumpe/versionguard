@@ -28,7 +28,7 @@ export function createDependencySetCommand(
           groupName: groupname,
           setName: setname,
         });
-        await writeConfig(config.path, updatedConfig);
+        await writeConfig(config.path)(updatedConfig).run();
         success(
           emphasize`Dependency set ${setname} created within group ${groupname}`,
         );

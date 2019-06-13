@@ -24,7 +24,7 @@ export function renameGroupCommand(
       argv._asyncResult = (async () => {
         const { oldname, newname } = argv;
         const config = renameGroup(oldname, newname, argv.config.contents);
-        await writeConfig(argv.config.path, config);
+        await writeConfig(argv.config.path)(config).run();
         success(emphasize`Group ${oldname} renamed to ${newname}!`);
       })();
     },

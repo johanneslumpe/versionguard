@@ -33,7 +33,7 @@ export function removeApplicationCommand(
           groupName: groupname,
           relativePaths: applicationpaths,
         });
-        await writeConfig(config.path, updatedConfig);
+        await writeConfig(config.path)(updatedConfig).run();
         success(
           emphasize`${pluralize(
             'Application',

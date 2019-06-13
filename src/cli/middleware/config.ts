@@ -29,7 +29,7 @@ export async function configMiddleware(
       emphasize`No config file found, creating config at path: ${configPath}`,
     );
     config = {};
-    await writeConfig(configPath, config);
+    await writeConfig(configPath)(config).run();
   } else {
     config = await readConfig(configPath);
   }

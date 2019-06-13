@@ -21,12 +21,12 @@ export function isVersionGuardErrorType(
 
 interface Deferred<T> {
   resolve: () => void;
-  reject: (reason?: Error) => void;
+  reject: (reason?: Error | void) => void;
   promise: Promise<T>;
 }
 export function deferred<T = void>(): Deferred<T> {
   let resolve: () => void;
-  let reject: (reason?: Error) => void;
+  let reject: (reason?: Error | void) => void;
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;

@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import json5 from 'json5';
 import findUp from 'find-up';
+import { TaskEither, tryCatch } from 'fp-ts/lib/TaskEither';
 
 import { emphasize } from './utils';
 import { GroupConfig } from './groups/add';
@@ -38,11 +39,15 @@ export async function readConfig(
 
 export function writeConfig(
   path: string,
-  data: VersionGuardConfig,
-): Promise<void> {
-  return fs.promises.writeFile(
-    path,
-    `${JSON_HEADER}
-  ${json5.stringify(data)}`,
-  );
+): (data: VersionGuardConfig) => TaskEither<NodeJS.ErrnoException, void> {
+  return data =>
+    tryCatch(
+      () =>
+        fs.promises.writeFile(
+          path,
+          `${JSON_HEADER}
+      ${json5.stringify(data)}`,
+        ),
+      reason => new Error(String(reason)),
+    );
 }

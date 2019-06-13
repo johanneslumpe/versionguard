@@ -33,7 +33,7 @@ export function addApplicationCommand(
           configPath: argv.config.path,
           relativePaths: applicationpaths,
         });
-        await writeConfig(config.path, updatedConfig);
+        await writeConfig(config.path)(updatedConfig).run();
         success(
           `${pluralize('Application', applicationpaths.length)} in ${pluralize(
             'path',

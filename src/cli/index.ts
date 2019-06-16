@@ -59,10 +59,7 @@ export async function executeCli(
     .recommendCommands()
     .strict()
     .wrap(Math.min(cli.terminalWidth(), 150))
-    .fail((msg, err) => {
-      console.log('fail');
-      return handleError(msg || err.message);
-    })
+    .fail((msg, err) => handleError(msg || err.message))
     .parse(
       args,
       async (
@@ -89,17 +86,14 @@ export async function executeCli(
               await result._asyncResult;
               deferredPromise.resolve();
             } else {
-              result._asyncResult
-                .map(x =>
-                  x.then(x => success(x.data)).then(deferredPromise.resolve),
-                )
-                .mapLeft(x =>
-                  x.then(x => handleError(x.data)).then(deferredPromise.reject),
-                );
+              (await result._asyncResult.run())
+                .map(result => console.log(result.message))
+                .map(deferredPromise.resolve)
+                .mapLeft(err => handleError(err.message))
+                .mapLeft(deferredPromise.reject);
             }
           }
         } catch (e) {
-          console.log('THERE');
           handleError(e.message);
           deferredPromise.reject(e);
         }

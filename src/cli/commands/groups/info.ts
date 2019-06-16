@@ -4,9 +4,11 @@ import { CrossTableRow } from 'cli-table3';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { getGroupConfig } from '../../../core/utils';
-import { info } from '../../logger';
 import { GroupConfig } from '../../../core/groups';
 import { getCrossTableWithHeaders } from '../../utils';
+import { fromEither } from 'fp-ts/lib/TaskEither';
+import { HandlerResult } from '../../HandlerResult';
+import { LogMessage } from '../../LogMessage';
 
 function getDependencySetTableRows(groupConfig: GroupConfig): CrossTableRow[] {
   return Object.keys(groupConfig.dependencies).map(set => {
@@ -39,24 +41,27 @@ export function groupInfoCommand(
         })
         .string('groupname'),
     argv => {
-      argv._asyncResult = (async () => {
-        const { groupname } = argv;
-        const groupConfig = getGroupConfig(groupname, argv.config.contents);
-        const applications = groupConfig.applications.join(', ');
+      const { groupname } = argv;
+      argv._asyncResult = fromEither(
+        getGroupConfig(groupname, argv.config.contents),
+      ).map(groupConfig => {
         const dependencySetTable = getCrossTableWithHeaders([
           '',
           'Dependencies',
           'Grace period',
         ]);
         dependencySetTable.push(...getDependencySetTableRows(groupConfig));
-        info(
-          `${chalk.bold(`${groupname}\n\n`)}${chalk.bold(
-            'Applications: ',
-          )}${applications}\n\n${chalk.bold(
-            'Dependency sets',
-          )}\n${dependencySetTable.toString()}`.trim(),
+        return HandlerResult.create(
+          LogMessage.create(
+            `${chalk.bold(`${groupname}\n\n`)}${chalk.bold(
+              'Applications: ',
+            )}${groupConfig.applications.join(', ')}\n\n${chalk.bold(
+              'Dependency sets',
+            )}\n${dependencySetTable.toString()}`.trim(),
+          ),
+          groupConfig,
         );
-      })();
+      });
     },
   );
 }

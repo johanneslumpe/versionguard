@@ -5,7 +5,7 @@ import pluralize from 'pluralize';
 
 import { VersionGuardConfig } from './config';
 import { Dictionary } from './types';
-import { getMinSemverVersionOrThrow, emphasize } from './utils';
+import { getMinSemverVersion, emphasize } from './utils';
 import { VersionGuardError } from './errors';
 
 interface PackageJson {
@@ -138,7 +138,8 @@ export async function checkDependencies({
           const dependencyVersion =
             dependenciesByApplication[application][dependency];
           const dependencySatisfied = semver.satisfies(
-            getMinSemverVersionOrThrow(dependencyVersion, dependency),
+            //@ts-ignore
+            getMinSemverVersion(dependencyVersion, dependency),
             semver.validRange(requiredDependencyVersion),
           );
           const appResult =

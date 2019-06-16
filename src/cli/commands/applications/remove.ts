@@ -2,9 +2,10 @@ import pluralize from 'pluralize';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
-import { success } from '../../logger';
 import { writeConfig } from '../../../core/config';
 import { removeApplication } from '../../../core/applications';
+import { HandlerResult } from '../../HandlerResult';
+import { LogMessage } from '../../LogMessage';
 
 export function removeApplicationCommand(
   yargs: ArgvWithGlobalOptions,
@@ -25,25 +26,30 @@ export function removeApplicationCommand(
         .string('applicationpaths')
         .array('applicationpaths'),
     argv => {
-      argv._asyncResult = (async () => {
-        const { config, groupname, applicationpaths } = argv;
-        const updatedConfig = await removeApplication({
-          config: config.contents,
-          configPath: config.path,
-          groupName: groupname,
-          relativePaths: applicationpaths,
-        });
-        await writeConfig(config.path)(updatedConfig).run();
-        success(
-          emphasize`${pluralize(
-            'Application',
-            applicationpaths.length,
-          )} in ${pluralize(
-            'path',
-            applicationpaths.length,
-          )} ${applicationpaths.join(', ')} removed from group ${groupname}`,
+      const { config, groupname, applicationpaths } = argv;
+      argv._asyncResult = removeApplication({
+        config: config.contents,
+        configPath: config.path,
+        groupName: groupname,
+        relativePaths: applicationpaths,
+      })
+        .chain(writeConfig(config.path))
+        .map(updatedConfig =>
+          HandlerResult.create(
+            LogMessage.create(
+              emphasize`${pluralize(
+                'Application',
+                applicationpaths.length,
+              )} in ${pluralize(
+                'path',
+                applicationpaths.length,
+              )} ${applicationpaths.join(
+                ', ',
+              )} removed from group ${groupname}`,
+            ),
+            updatedConfig,
+          ),
         );
-      })();
     },
   );
 }

@@ -39,15 +39,19 @@ export async function readConfig(
 
 export function writeConfig(
   path: string,
-): (data: VersionGuardConfig) => TaskEither<NodeJS.ErrnoException, void> {
+): (
+  data: VersionGuardConfig,
+) => TaskEither<VersionGuardError, VersionGuardConfig> {
   return data =>
     tryCatch(
-      () =>
-        fs.promises.writeFile(
+      async () => {
+        await fs.promises.writeFile(
           path,
           `${JSON_HEADER}
       ${json5.stringify(data)}`,
-        ),
-      reason => new Error(String(reason)),
+        );
+        return data;
+      },
+      reason => VersionGuardError.from(String(reason)),
     );
 }

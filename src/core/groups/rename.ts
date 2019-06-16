@@ -1,20 +1,25 @@
 import { VersionGuardConfig } from '../config';
 import { emphasize } from '../utils';
 import { VersionGuardError } from '../errors';
+import { Either, left, right } from 'fp-ts/lib/Either';
 
 export function renameGroup(
   oldname: string,
   newname: string,
   config: VersionGuardConfig,
-): VersionGuardConfig {
+): Either<VersionGuardError, VersionGuardConfig> {
   if (!config[oldname]) {
-    throw VersionGuardError.from(emphasize`Group ${oldname} does not exist`);
+    return left(
+      VersionGuardError.from(emphasize`Group ${oldname} does not exist`),
+    );
   } else if (config[newname]) {
-    throw VersionGuardError.from(emphasize`Group ${newname} already exists`);
+    return left(
+      VersionGuardError.from(emphasize`Group ${newname} already exists`),
+    );
   }
   const { [oldname]: existingConfig, ...rest } = config;
-  return {
+  return right({
     ...rest,
     [newname]: existingConfig,
-  };
+  });
 }

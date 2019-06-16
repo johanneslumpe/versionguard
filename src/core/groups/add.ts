@@ -2,9 +2,8 @@ import { Either, left, right } from 'fp-ts/lib/Either';
 
 import { VersionGuardConfig } from '../config';
 import { emphasize } from '../utils';
-import { DependencySetConfig } from '../dependencies/create-set';
 import { VersionGuardError } from '../errors';
-import { Dictionary } from '../types';
+import { Dictionary, DependencySetConfig } from '../types';
 
 export function createEmptyGroupConfig(): GroupConfig {
   return {

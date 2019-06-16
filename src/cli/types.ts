@@ -1,13 +1,14 @@
 import { Argv, Arguments } from 'yargs';
 import { configMiddleware } from './middleware/config';
-import { Either } from 'fp-ts/lib/Either';
-import { FailureResult, SuccessResult } from './commands/groups/add';
+import { HandlerResult } from './HandlerResult';
+import { TaskEither } from 'fp-ts/lib/TaskEither';
+import { VersionGuardError } from '../core/errors';
 
 export type Unbox<T> = T extends Promise<infer R> ? R : T;
 type CustomArgumentProperties = Unbox<ReturnType<typeof configMiddleware>> & {
   _asyncResult?:
     | Promise<unknown>
-    | Either<Promise<FailureResult>, Promise<SuccessResult>>;
+    | TaskEither<VersionGuardError, HandlerResult>;
 };
 export type ArgumentsWithConfig = Arguments<CustomArgumentProperties>;
 export type ArgvWithGlobalOptions = Argv<

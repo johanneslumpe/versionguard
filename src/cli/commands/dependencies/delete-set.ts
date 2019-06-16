@@ -1,8 +1,11 @@
+import { fromEither } from 'fp-ts/lib/TaskEither';
+
 import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
-import { success } from '../../logger';
 import { writeConfig } from '../../../core/config';
 import { deleteDependencySetFromGroup } from '../../../core/dependencies';
+import { HandlerResult } from '../../HandlerResult';
+import { LogMessage } from '../../LogMessage';
 
 export function deleteDependencySetCommand(
   yargs: ArgvWithGlobalOptions,
@@ -21,18 +24,23 @@ export function deleteDependencySetCommand(
         .string('groupname')
         .string('setname'),
     argv => {
-      argv._asyncResult = (async () => {
-        const { config, groupname, setname } = argv;
-        const updatedConfig = deleteDependencySetFromGroup({
+      const { config, groupname, setname } = argv;
+      argv._asyncResult = fromEither(
+        deleteDependencySetFromGroup({
           config: config.contents,
           groupName: groupname,
           setName: setname,
-        });
-        await writeConfig(config.path)(updatedConfig).run();
-        success(
-          emphasize`Dependency set ${setname} deleted from group ${groupname}`,
+        }),
+      )
+        .chain(writeConfig(config.path))
+        .map(updatedConfig =>
+          HandlerResult.create(
+            LogMessage.create(
+              emphasize`Dependency set ${setname} deleted from group ${groupname}`,
+            ),
+            updatedConfig,
+          ),
         );
-      })();
     },
   );
 }

@@ -1,8 +1,11 @@
+import { fromEither } from 'fp-ts/lib/TaskEither';
+
 import { ArgvWithGlobalOptions } from '../../types';
 import { removeGroup } from '../../../core/groups';
 import { writeConfig } from '../../../core/config';
 import { emphasize } from '../../../core/utils';
-import { success } from '../../logger';
+import { HandlerResult } from '../../HandlerResult';
+import { LogMessage } from '../../LogMessage';
 
 export function removeGroupCommand(
   yargs: ArgvWithGlobalOptions,
@@ -17,12 +20,17 @@ export function removeGroupCommand(
         })
         .string('groupname'),
     argv => {
-      argv._asyncResult = (async () => {
-        const { groupname } = argv;
-        const config = removeGroup(groupname, argv.config.contents);
-        await writeConfig(argv.config.path)(config).run();
-        success(emphasize`Group ${groupname} removed!`);
-      })();
+      const { groupname } = argv;
+      argv._asyncResult = fromEither(
+        removeGroup(groupname, argv.config.contents),
+      )
+        .chain(writeConfig(argv.config.path))
+        .map(result =>
+          HandlerResult.create(
+            LogMessage.create(emphasize`Group ${groupname} removed!`),
+            result,
+          ),
+        );
     },
   );
 }

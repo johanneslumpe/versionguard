@@ -1,17 +1,10 @@
+import { left, Either, right } from 'fp-ts/lib/Either';
+
 import { emphasize, getGroupConfig } from '../utils';
-import { Dictionary } from '../types';
+import { DependencySetConfig } from '../types';
 import { VersionGuardConfig } from '../config';
 import { VersionGuardError } from '../errors';
-
-export interface DependencyConfig {
-  dateAdded: number;
-  semver: string;
-}
-
-export interface DependencySetConfig {
-  dependencySemvers: Dictionary<DependencyConfig>;
-  gracePeriod: number;
-}
+import { GroupConfig } from '../groups';
 
 export function createEmptyDependencySetConfig(): DependencySetConfig {
   return {
@@ -26,26 +19,34 @@ interface CreateDependencySetInGroupOptions {
   config: VersionGuardConfig;
 }
 
+function ensureSetDoesNotExist(
+  setName: string,
+): (config: GroupConfig) => Either<VersionGuardError, GroupConfig> {
+  return config => {
+    return !config.dependencies[setName]
+      ? right(config)
+      : left(VersionGuardError.from(emphasize`Set ${setName} already exists`));
+  };
+}
+
 export function createDependencySetInGroup({
   setName,
   groupName,
   config,
-}: CreateDependencySetInGroupOptions): VersionGuardConfig {
-  const groupConfig = getGroupConfig(groupName, config);
-  if (groupConfig.dependencies[setName]) {
-    throw VersionGuardError.from(
-      emphasize`Set ${setName} already exists in group ${groupName}`,
-    );
-  }
-
-  return {
-    ...config,
-    [groupName]: {
-      ...groupConfig,
-      dependencies: {
-        ...groupConfig.dependencies,
-        [setName]: createEmptyDependencySetConfig(),
+}: CreateDependencySetInGroupOptions): Either<
+  VersionGuardError,
+  VersionGuardConfig
+> {
+  return getGroupConfig(groupName, config)
+    .chain(ensureSetDoesNotExist(setName))
+    .map(groupConfig => ({
+      ...config,
+      [groupName]: {
+        ...groupConfig,
+        dependencies: {
+          ...groupConfig.dependencies,
+          [setName]: createEmptyDependencySetConfig(),
+        },
       },
-    },
-  };
+    }));
 }

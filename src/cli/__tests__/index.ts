@@ -56,7 +56,7 @@ function getCleanedMockStdout(): string {
 function formatGroupListOutput(groups: string[]): string {
   return trim`
     ℹ Groups found:
-    ${groups.map(group => `ℹ ${group}`).join('\n')}
+    ${groups.map(group => `${group}`).join('\n')}
   `;
 }
 

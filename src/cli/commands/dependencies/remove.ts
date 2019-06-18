@@ -1,8 +1,11 @@
+import { fromEither } from 'fp-ts/lib/TaskEither';
+
 import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
-import { success } from '../../logger';
 import { writeConfig } from '../../../core/config';
 import { removeDependency } from '../../../core/dependencies/remove';
+import { HandlerResult } from '../../HandlerResult';
+import { LogMessage } from '../../LogMessage';
 
 export function removeDependencyCommand(
   yargs: ArgvWithGlobalOptions,
@@ -25,19 +28,24 @@ export function removeDependencyCommand(
         .string('setname')
         .string('dependency'),
     argv => {
-      argv._asyncResult = (async () => {
-        const { config, groupname, setname, dependency } = argv;
-        const updatedConfig = removeDependency({
+      const { config, groupname, setname, dependency } = argv;
+      argv._asyncResult = fromEither(
+        removeDependency({
           config: config.contents,
           dependency,
           groupName: groupname,
           setName: setname,
-        });
-        await writeConfig(config.path, updatedConfig);
-        success(
-          emphasize`Dependency ${dependency} successfully removed from set ${setname} within group ${groupname}`,
+        }),
+      )
+        .chain(writeConfig(config.path))
+        .map(updatedConfig =>
+          HandlerResult.create(
+            LogMessage.create(
+              emphasize`Dependency ${dependency} successfully removed from set ${setname} within group ${groupname}`,
+            ),
+            updatedConfig,
+          ),
         );
-      })();
     },
   );
 }

@@ -1,8 +1,10 @@
-import { getGroupConfig, emphasize } from '../utils';
+import { Either } from 'fp-ts/lib/Either';
+
+import { getGroupConfig } from '../utils';
 import { VersionGuardConfig } from '../config';
 import { VersionGuardError } from '../errors';
 import { filterDependenciesFromSets } from './utils/filterDependenciesFromSets';
-import { findSetsContainingDependency } from './utils/findSetsContainingDependency';
+import { ensureDependencyExistsInSets } from './utils/ensureDependencyExistsInSets';
 
 interface RemoveDependencyOptions {
   groupName: string;
@@ -16,26 +18,20 @@ export function removeDependency({
   setName,
   dependency,
   config,
-}: RemoveDependencyOptions): VersionGuardConfig {
+}: RemoveDependencyOptions): Either<VersionGuardError, VersionGuardConfig> {
   const [dependencyName] = dependency.split('@');
-  const groupConfig = getGroupConfig(groupName, config);
-  const setsContainingDependency = findSetsContainingDependency(
-    dependencyName,
-    groupConfig.dependencies,
-  );
-
-  if (!setsContainingDependency.length) {
-    throw VersionGuardError.from(
-      emphasize`Dependency ${dependencyName} does not exist within set ${setName}`,
-    );
-  }
-
-  return {
-    ...config,
-    [groupName]: filterDependenciesFromSets({
+  return getGroupConfig(groupName, config).chain(groupConfig =>
+    ensureDependencyExistsInSets({
+      setName,
       dependencyName,
-      groupConfig: getGroupConfig(groupName, config),
-      setsContainingDependency: setsContainingDependency,
-    }),
-  };
+      dependencySetConfig: groupConfig.dependencies,
+    }).map(setsContainingDependency => ({
+      ...config,
+      [groupName]: filterDependenciesFromSets({
+        dependencyName,
+        groupConfig,
+        setsContainingDependency,
+      }),
+    })),
+  );
 }

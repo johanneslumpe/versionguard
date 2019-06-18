@@ -1,8 +1,11 @@
+import { fromEither } from 'fp-ts/lib/TaskEither';
+
 import { ArgvWithGlobalOptions } from '../../types';
 import { renameGroup } from '../../../core/groups';
 import { writeConfig } from '../../../core/config';
 import { emphasize } from '../../../core/utils';
-import { success } from '../../logger';
+import { HandlerResult } from '../../HandlerResult';
+import { LogMessage } from '../../LogMessage';
 
 export function renameGroupCommand(
   yargs: ArgvWithGlobalOptions,
@@ -21,12 +24,19 @@ export function renameGroupCommand(
         .string('oldname')
         .string('newname'),
     argv => {
-      argv._asyncResult = (async () => {
-        const { oldname, newname } = argv;
-        const config = renameGroup(oldname, newname, argv.config.contents);
-        await writeConfig(argv.config.path, config);
-        success(emphasize`Group ${oldname} renamed to ${newname}!`);
-      })();
+      const { oldname, newname } = argv;
+      argv._asyncResult = fromEither(
+        renameGroup(oldname, newname, argv.config.contents),
+      )
+        .chain(writeConfig(argv.config.path))
+        .map(config =>
+          HandlerResult.create(
+            LogMessage.create(
+              emphasize`Group ${oldname} renamed to ${newname}!`,
+            ),
+            config,
+          ),
+        );
     },
   );
 }

@@ -1,15 +1,19 @@
-import { VersionGuardConfig } from '../config';
+import { Either, left, right } from 'fp-ts/lib/Either';
+
 import { emphasize } from '../utils';
+import { VersionGuardConfig } from '../config';
 import { VersionGuardError } from '../errors';
 
 export function removeGroup(
   oldname: string,
   config: VersionGuardConfig,
-): VersionGuardConfig {
+): Either<VersionGuardError, VersionGuardConfig> {
   if (!config[oldname]) {
-    throw VersionGuardError.from(emphasize`Group ${oldname} does not exist`);
+    return left(
+      VersionGuardError.from(emphasize`Group ${oldname} does not exist`),
+    );
   }
   const clone = { ...config };
   delete clone[oldname];
-  return clone;
+  return right(clone);
 }

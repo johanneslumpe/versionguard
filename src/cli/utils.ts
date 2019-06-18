@@ -1,6 +1,7 @@
 import { ArgvWithGlobalOptions } from './types';
 import { VersionGuardError, VersionGuardErrorCode } from '../core/errors';
 import Table, { HorizontalTable, CrossTable } from 'cli-table3';
+import logSymbols = require('log-symbols');
 
 type CommandCreator = (yargs: ArgvWithGlobalOptions) => ArgvWithGlobalOptions;
 
@@ -21,12 +22,12 @@ export function isVersionGuardErrorType(
 
 interface Deferred<T> {
   resolve: () => void;
-  reject: (reason?: Error) => void;
+  reject: (reason?: Error | void) => void;
   promise: Promise<T>;
 }
 export function deferred<T = void>(): Deferred<T> {
   let resolve: () => void;
-  let reject: (reason?: Error) => void;
+  let reject: (reason?: Error | void) => void;
   const promise = new Promise<T>((res, rej) => {
     resolve = res;
     reject = rej;
@@ -58,4 +59,8 @@ export function getHorizontalTableWithHeaders(head: string[]): HorizontalTable {
 
 export function getCrossTableWithHeaders(head: string[]): CrossTable {
   return getTable(head) as CrossTable;
+}
+
+export function getLogSymbolForStatus(passed: boolean): string {
+  return passed ? logSymbols.success : logSymbols.error;
 }

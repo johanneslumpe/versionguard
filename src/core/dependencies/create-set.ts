@@ -1,19 +1,12 @@
-import { emphasize, getGroupConfig } from '../utils';
-import { Dictionary } from '../types';
+import { Either } from 'fp-ts/lib/Either';
+
+import { getGroupConfig } from '../utils';
+import { DependencySetConfig } from '../types';
 import { VersionGuardConfig } from '../config';
 import { VersionGuardError } from '../errors';
+import { ensureSetDoesNotExist } from './utils/ensureSetDoesNotExist';
 
-export interface DependencyConfig {
-  dateAdded: number;
-  semver: string;
-}
-
-export interface DependencySetConfig {
-  dependencySemvers: Dictionary<DependencyConfig>;
-  gracePeriod: number;
-}
-
-export function createEmptyDependencySetConfig(): DependencySetConfig {
+function createEmptyDependencySetConfig(): DependencySetConfig {
   return {
     dependencySemvers: {},
     gracePeriod: Infinity,
@@ -30,22 +23,20 @@ export function createDependencySetInGroup({
   setName,
   groupName,
   config,
-}: CreateDependencySetInGroupOptions): VersionGuardConfig {
-  const groupConfig = getGroupConfig(groupName, config);
-  if (groupConfig.dependencies[setName]) {
-    throw VersionGuardError.from(
-      emphasize`Set ${setName} already exists in group ${groupName}`,
-    );
-  }
-
-  return {
-    ...config,
-    [groupName]: {
-      ...groupConfig,
-      dependencies: {
-        ...groupConfig.dependencies,
-        [setName]: createEmptyDependencySetConfig(),
+}: CreateDependencySetInGroupOptions): Either<
+  VersionGuardError,
+  VersionGuardConfig
+> {
+  return getGroupConfig(groupName, config)
+    .chain(ensureSetDoesNotExist(setName))
+    .map(groupConfig => ({
+      ...config,
+      [groupName]: {
+        ...groupConfig,
+        dependencies: {
+          ...groupConfig.dependencies,
+          [setName]: createEmptyDependencySetConfig(),
+        },
       },
-    },
-  };
+    }));
 }

@@ -1,7 +1,7 @@
 import { ObjectValues } from './types';
 
 const codes = {
-  DEPENDENCY_EXISTS_IN_SIBLING_SET: 2000,
+  DEPENDENCY_EXISTS_IN_SIBLING_SET: 1000,
 } as const;
 
 export type VersionGuardErrorCode = ObjectValues<typeof codes>;

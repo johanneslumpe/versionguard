@@ -1,6 +1,9 @@
-import { emphasize, getGroupConfig, normalizePaths } from '../utils';
+import { TaskEither, fromEither } from 'fp-ts/lib/TaskEither';
+
+import { getGroupConfig, normalizePaths } from '../utils';
 import { VersionGuardConfig } from '../config';
 import { VersionGuardError } from '../errors';
+import { ensureApplicationsExist } from './utils/ensureApplicationsExist';
 
 interface RemoveApplicationOptions {
   relativePaths: string[];
@@ -14,24 +17,23 @@ export function removeApplication({
   config,
   configPath,
   groupName,
-}: RemoveApplicationOptions): VersionGuardConfig {
-  const groupConfig = getGroupConfig(groupName, config);
-  const normalizedPaths = normalizePaths({ configPath, relativePaths });
-  normalizedPaths.forEach(relativePath => {
-    if (!groupConfig.applications.includes(relativePath)) {
-      throw VersionGuardError.from(
-        emphasize`Group does not include application with path ${relativePath}`,
-      );
-    }
-  });
-
-  return {
-    ...config,
-    [groupName]: {
-      ...groupConfig,
-      applications: groupConfig.applications.filter(
-        path => !normalizedPaths.includes(path),
+}: RemoveApplicationOptions): TaskEither<
+  VersionGuardError,
+  VersionGuardConfig
+> {
+  return fromEither(getGroupConfig(groupName, config)).chain(groupConfig =>
+    fromEither(
+      ensureApplicationsExist(normalizePaths({ configPath, relativePaths }))(
+        groupConfig,
       ),
-    },
-  };
+    ).map(paths => ({
+      ...config,
+      [groupName]: {
+        ...groupConfig,
+        applications: groupConfig.applications.filter(
+          path => !paths.includes(path),
+        ),
+      },
+    })),
+  );
 }

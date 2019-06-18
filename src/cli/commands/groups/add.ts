@@ -1,8 +1,11 @@
+import { fromEither } from 'fp-ts/lib/TaskEither';
+
 import { ArgvWithGlobalOptions } from '../../types';
 import { addGroup } from '../../../core/groups';
 import { emphasize } from '../../../core/utils';
-import { success } from '../../logger';
 import { writeConfig } from '../../../core/config';
+import { HandlerResult } from '../../HandlerResult';
+import { LogMessage } from '../../LogMessage';
 
 export function addGroupCommand(
   yargs: ArgvWithGlobalOptions,
@@ -17,11 +20,16 @@ export function addGroupCommand(
         })
         .string('groupname'),
     argv => {
-      argv._asyncResult = (async () => {
-        const config = addGroup(argv.groupname, argv.config.contents);
-        await writeConfig(argv.config.path, config);
-        success(emphasize`Group ${argv.groupname} added!`);
-      })();
+      argv._asyncResult = fromEither(
+        addGroup(argv.groupname, argv.config.contents),
+      )
+        .chain(writeConfig(argv.config.path))
+        .map(data =>
+          HandlerResult.create(
+            LogMessage.create(emphasize`Group ${argv.groupname} added!`),
+            data,
+          ),
+        );
     },
   );
 }

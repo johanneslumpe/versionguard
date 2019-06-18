@@ -56,7 +56,7 @@ function getCleanedMockStdout(): string {
 function formatGroupListOutput(groups: string[]): string {
   return trim`
     ℹ Groups found:
-    ${groups.map(group => `ℹ ${group}`).join('\n')}
+    ${groups.map(group => `${group}`).join('\n')}
   `;
 }
 
@@ -79,7 +79,7 @@ describe('versionguard', () => {
   afterEach(() => {
     const { stderr, stdout } = stdMocks.flush();
     stdMocks.restore();
-    //output captured data left in stdoutand stderr
+    // output captured data left in stdout and stderr
     const cleanedStderr = cleanCliOutput(stderr);
     if (cleanedStderr) {
       console.log(cleanedStderr);
@@ -96,6 +96,14 @@ describe('versionguard', () => {
       expect(getCleanedMockStdout()).toContain(
         `No config file found, creating config at path: ${process.cwd()}/.versionguardrc.json`,
       );
+    });
+
+    it('should show help output when called without arguments', async () => {
+      await executeCli([]);
+      const output = getCleanedMockStdout();
+      expect(output).toContain('versionguard [command]');
+      expect(output).toContain('Commands:');
+      expect(output).toContain('Options:');
     });
   });
 
@@ -330,7 +338,7 @@ Dependency sets
             '--verbose',
           );
           expect(getCleanedMockStdout()).toBe(trim`
-            ℹ
+            ✔
             ┌─────────────┬──────────┬─────────┬────────┬─────┐
             │Application  │Dependency│Installed│Required│Valid│
             ├─────────────┼──────────┼─────────┼────────┼─────┤
@@ -341,7 +349,7 @@ Dependency sets
             │             │dep_b     │1.2.3    │1.x     │✔    │
             │             │dep_c     │~1.5.0   │1.x     │✔    │
             └─────────────┴──────────┴─────────┴────────┴─────┘
-            ✔ Check passed!
+            Check passed!
           `);
         });
       });
@@ -368,7 +376,7 @@ Dependency sets
             guard();
           } catch (e) {
             expect(getCleanedMockStdout()).toBe(trim`
-              ℹ
+              ✖
               ┌─────────────┬──────────┬─────────┬────────┬─────┐
               │Application  │Dependency│Installed│Required│Valid│
               ├─────────────┼──────────┼─────────┼────────┼─────┤
@@ -379,7 +387,7 @@ Dependency sets
               │             │dep_b     │1.2.3    │3.x     │✖    │
               │             │dep_c     │~1.5.0   │3.x     │✖    │
               └─────────────┴──────────┴─────────┴────────┴─────┘
-              ✖ Group all-invalid-a did not meet dependency version requirements
+              Group all-invalid-a did not meet dependency version requirements
             `);
           }
         });
@@ -400,7 +408,7 @@ Dependency sets
           '--verbose',
         );
         expect(getCleanedMockStdout()).toBe(trim`
-            ℹ
+            ✔
             ┌─────────────┬──────────┬─────────┬────────┬─────┐
             │Application  │Dependency│Installed│Required│Valid│
             ├─────────────┼──────────┼─────────┼────────┼─────┤
@@ -411,7 +419,7 @@ Dependency sets
             │             │dep_b     │1.2.3    │1.x     │✔    │
             │             │dep_c     │~1.5.0   │1.x     │✔    │            
             └─────────────┴──────────┴─────────┴────────┴─────┘
-            ✔ Check passed!
+            Check passed!
           `);
       });
     });
@@ -440,7 +448,7 @@ Dependency sets
           guard();
         } catch (e) {
           expect(getCleanedMockStdout()).toBe(trim`
-            ℹ
+            ✖
             ┌─────────────┬──────────┬─────────┬────────┬─────┐
             │Application  │Dependency│Installed│Required│Valid│
             ├─────────────┼──────────┼─────────┼────────┼─────┤
@@ -451,7 +459,7 @@ Dependency sets
             │             │dep_b     │1.2.3    │3.x     │✖    │
             │             │dep_c     │~1.5.0   │3.x     │✖    │            
             └─────────────┴──────────┴─────────┴────────┴─────┘
-            ✖ Group all-invalid-a did not meet dependency version requirements
+            Group all-invalid-a did not meet dependency version requirements
           `);
         }
       });
@@ -477,7 +485,7 @@ Dependency sets
           '--verbose',
         );
         expect(getCleanedMockStdout()).toBe(trim`
-            ℹ
+            ✔
             ┌─────────────┬──────────┬─────────┬────────┬─────┐
             │Application  │Dependency│Installed│Required│Valid│
             ├─────────────┼──────────┼─────────┼────────┼─────┤
@@ -498,7 +506,7 @@ Dependency sets
             │             │dep_b     │1.2.3    │1.x     │✔    │
             │             │dep_c     │~1.5.0   │1.x     │✔    │
             └─────────────┴──────────┴─────────┴────────┴─────┘
-            ✔ Check passed!
+            Check passed!
           `);
       });
     });
@@ -526,7 +534,7 @@ Dependency sets
           guard();
         } catch (e) {
           expect(getCleanedMockStdout()).toBe(trim`
-            ℹ
+            ✖
             ┌─────────────┬──────────┬─────────┬────────┬─────┐
             │Application  │Dependency│Installed│Required│Valid│
             ├─────────────┼──────────┼─────────┼────────┼─────┤
@@ -547,7 +555,7 @@ Dependency sets
             │             │dep_b     │1.2.3    │3.x     │✖    │
             │             │dep_c     │~1.5.0   │3.x     │✖    │
             └─────────────┴──────────┴─────────┴────────┴─────┘
-            ✖ Groups all-invalid-a, all-invalid-b did not meet dependency version requirements
+            Groups all-invalid-a, all-invalid-b did not meet dependency version requirements
           `);
         }
       });
@@ -567,7 +575,7 @@ Dependency sets
           '--verbose',
         );
         expect(getCleanedMockStdout()).toBe(trim`
-            ℹ
+            ✔
             ┌─────────────┬──────────┬─────────┬────────┬─────┐
             │Application  │Dependency│Installed│Required│Valid│
             ├─────────────┼──────────┼─────────┼────────┼─────┤
@@ -575,7 +583,7 @@ Dependency sets
             │             │dep_b     │1.2.3    │1.x     │✔    │
             │             │dep_c     │~1.5.0   │1.x     │✔    │
             └─────────────┴──────────┴─────────┴────────┴─────┘
-            ✔ Check passed!
+            Check passed!
           `);
       });
     });
@@ -592,7 +600,7 @@ Dependency sets
           '--verbose',
         );
         expect(getCleanedMockStdout()).toBe(trim`
-            ℹ
+            ✔
             ┌─────────────┬──────────┬─────────┬────────┬─────┐
             │Application  │Dependency│Installed│Required│Valid│
             ├─────────────┼──────────┼─────────┼────────┼─────┤
@@ -607,7 +615,7 @@ Dependency sets
             │             │dep_b     │1.2.3    │1.x     │✔    │
             │             │dep_c     │~1.5.0   │1.x     │✔    │
             └─────────────┴──────────┴─────────┴────────┴─────┘            
-            ✔ Check passed!
+            Check passed!
           `);
       });
     });
@@ -635,7 +643,7 @@ Dependency sets
           guard();
         } catch (e) {
           expect(getCleanedMockStdout()).toBe(trim`
-            ℹ
+            ✖
             ┌─────────────┬──────────┬─────────┬────────┬─────┐
             │Application  │Dependency│Installed│Required│Valid│
             ├─────────────┼──────────┼─────────┼────────┼─────┤
@@ -650,7 +658,7 @@ Dependency sets
             │             │dep_b     │1.2.3    │3.x     │✖    │
             │             │dep_c     │~1.5.0   │3.x     │✖    │
             └─────────────┴──────────┴─────────┴────────┴─────┘
-            ✖ Group all-invalid-a did not meet dependency version requirements
+            Group all-invalid-a did not meet dependency version requirements
           `);
         }
       });
@@ -675,7 +683,7 @@ Dependency sets
           '--verbose',
         );
         expect(getCleanedMockStdout()).toBe(trim`
-            ℹ
+            ✔
             ┌─────────────┬──────────┬─────────┬────────┬─────┐
             │Application  │Dependency│Installed│Required│Valid│
             ├─────────────┼──────────┼─────────┼────────┼─────┤
@@ -688,7 +696,7 @@ Dependency sets
             │application_f│dep_a     │^1.0.0   │1.x     │✔    │
             │             │dep_b     │1.2.3    │1.x     │✔    │
             └─────────────┴──────────┴─────────┴────────┴─────┘            
-            ✔ Check passed!
+            Check passed!
           `);
       });
     });
@@ -716,7 +724,7 @@ Dependency sets
           guard();
         } catch (e) {
           expect(getCleanedMockStdout()).toBe(trim`
-            ℹ
+            ✖
             ┌─────────────┬──────────┬─────────┬────────┬─────┐
             │Application  │Dependency│Installed│Required│Valid│
             ├─────────────┼──────────┼─────────┼────────┼─────┤
@@ -749,7 +757,7 @@ Dependency sets
             │application_d│dep_a     │^1.0.0   │3.x     │✖    │
             │             │dep_b     │1.2.3    │3.x     │✖    │
             └─────────────┴──────────┴─────────┴────────┴─────┘
-            ✖ Groups all-invalid-a, all-invalid-b did not meet dependency version requirements
+            Groups all-invalid-a, all-invalid-b did not meet dependency version requirements
           `);
         }
       });
@@ -767,7 +775,7 @@ Dependency sets
           '--verbose',
         );
         expect(getCleanedMockStdout()).toBe(trim`
-            ℹ
+            ✔
             ┌─────────────┬──────────┬─────────┬────────┬─────┐
             │Application  │Dependency│Installed│Required│Valid│
             ├─────────────┼──────────┼─────────┼────────┼─────┤
@@ -782,7 +790,7 @@ Dependency sets
             │             │dep_b     │1.2.3    │1.x     │✔    │
             │             │dep_c     │~1.5.0   │1.x     │✔    │
             └─────────────┴──────────┴─────────┴────────┴─────┘            
-            ✔ Check passed!
+            Check passed!
           `);
       });
     });
@@ -810,7 +818,7 @@ Dependency sets
           guard();
         } catch (e) {
           expect(getCleanedMockStdout()).toBe(trim`
-            ℹ
+            ✖
             ┌─────────────┬──────────┬─────────┬────────┬─────┐
             │Application  │Dependency│Installed│Required│Valid│
             ├─────────────┼──────────┼─────────┼────────┼─────┤
@@ -851,7 +859,7 @@ Dependency sets
             │             │dep_b     │1.2.3    │3.x     │✖    │
             │             │dep_c     │~1.5.0   │3.x     │✖    │            
             └─────────────┴──────────┴─────────┴────────┴─────┘
-            ✖ Groups all-invalid-a, all-invalid-b did not meet dependency version requirements
+            Groups all-invalid-a, all-invalid-b did not meet dependency version requirements
           `);
         }
       });
@@ -881,14 +889,14 @@ Dependency sets
             '--verbose',
           );
           expect(getCleanedMockStdout()).toBe(trim`
-            ℹ
+            ✔
             ┌─────────────┬──────────┬─────────┬────────┬─────┐
             │Application  │Dependency│Installed│Required│Valid│
             ├─────────────┼──────────┼─────────┼────────┼─────┤
             │application_a│dep_a     │^1.0.0   │1.x     │✔    │
             │             │dep_b     │1.2.3    │1.x     │✔    │
             └─────────────┴──────────┴─────────┴────────┴─────┘
-            ✔ Check passed!
+            Check passed!
           `);
         });
       });
@@ -917,7 +925,7 @@ Dependency sets
             '--verbose',
           );
           expect(getCleanedMockStdout()).toBe(trim`
-            ℹ
+            ✔
             ┌─────────────┬──────────┬─────────┬────────┬─────┐
             │Application  │Dependency│Installed│Required│Valid│
             ├─────────────┼──────────┼─────────┼────────┼─────┤
@@ -925,7 +933,7 @@ Dependency sets
             │             │dep_b     │1.2.3    │1.x     │✔    │
             │             │dep_c     │~1.5.0   │1.x     │✔    │
             └─────────────┴──────────┴─────────┴────────┴─────┘
-            ✔ Check passed!
+            Check passed!
           `);
         });
       });
@@ -955,7 +963,7 @@ Dependency sets
             '--verbose',
           );
           expect(getCleanedMockStdout()).toBe(trim`
-            ℹ
+            ✔
             ┌─────────────┬──────────┬─────────┬────────┬─────┐
             │Application  │Dependency│Installed│Required│Valid│
             ├─────────────┼──────────┼─────────┼────────┼─────┤
@@ -966,7 +974,7 @@ Dependency sets
             │             │dep_b     │1.2.3    │1.x     │✔    │
             │             │dep_c     │~1.5.0   │1.x     │✔    │            
             └─────────────┴──────────┴─────────┴────────┴─────┘
-            ✔ Check passed!
+            Check passed!
           `);
         });
       });
@@ -1006,6 +1014,7 @@ Dependency sets
             guard();
           } catch (e) {
             expect(getCleanedMockStdout()).toContain(trim`
+              ✖
               ┌─────────────┬──────────┬─────────┬────────┬─────┐
               │Application  │Dependency│Installed│Required│Valid│
               ├─────────────┼──────────┼─────────┼────────┼─────┤
@@ -1026,7 +1035,7 @@ Dependency sets
               │             │dep_b     │1.2.3    │3.x     │✖    │
               │             │dep_c     │~1.5.0   │3.x     │✖    │
               └─────────────┴──────────┴─────────┴────────┴─────┘
-              ✖ Group all-invalid-a did not meet dependency version requirements
+              Group all-invalid-a did not meet dependency version requirements
             `);
           }
         });

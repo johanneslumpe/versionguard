@@ -1,14 +1,11 @@
 import path from 'path';
-import fs from 'fs';
+import { TaskEither, fromEither } from 'fp-ts/lib/TaskEither';
 
-import {
-  emphasize,
-  getGroupConfig,
-  isNodeJSError,
-  normalizePaths,
-} from '../utils';
+import { getGroupConfig, normalizePaths } from '../utils';
 import { VersionGuardConfig } from '../config';
 import { VersionGuardError } from '../errors';
+import { ensurePathsDoNotExist } from './utils/ensurePathsDoNotExist';
+import { ensurePackageJsonsExist } from './utils/ensurePackageJsonsExist';
 
 interface AddApplicationOptions {
   relativePaths: string[];
@@ -17,52 +14,26 @@ interface AddApplicationOptions {
   config: VersionGuardConfig;
 }
 
-function ensurePackageJsonsExist(
-  basePath: string,
-  relativePaths: string[],
-): Promise<void[]> {
-  return Promise.all(
-    relativePaths.map(async relativePath => {
-      const packageJsonPath = path.join(basePath, relativePath, 'package.json');
-      try {
-        await fs.promises.stat(packageJsonPath);
-      } catch (e) {
-        if (isNodeJSError(e) && e.code === 'ENOENT') {
-          throw VersionGuardError.from(
-            emphasize`Application in path ${path.join(
-              basePath,
-              relativePath,
-            )} does not contain a valid package.json file`,
-          );
-        } else {
-          throw e;
-        }
-      }
-    }),
-  );
-}
-
-export async function addApplications({
+export function addApplications({
   relativePaths,
   configPath,
   groupName,
   config,
-}: AddApplicationOptions): Promise<VersionGuardConfig> {
-  const groupConfig = getGroupConfig(groupName, config);
-  const normalizedPaths = normalizePaths({ configPath, relativePaths });
-  normalizedPaths.forEach(relativePath => {
-    if (groupConfig.applications.includes(relativePath)) {
-      throw VersionGuardError.from(
-        emphasize`Group ${groupName} already includes application with path ${relativePath}`,
-      );
-    }
-  });
-  await ensurePackageJsonsExist(path.dirname(configPath), normalizedPaths);
-  return {
-    ...config,
-    [groupName]: {
-      ...groupConfig,
-      applications: groupConfig.applications.concat(normalizedPaths),
-    },
-  };
+}: AddApplicationOptions): TaskEither<VersionGuardError, VersionGuardConfig> {
+  return fromEither(getGroupConfig(groupName, config)).chain(groupConfig =>
+    fromEither(
+      ensurePathsDoNotExist({
+        paths: normalizePaths({ configPath, relativePaths }),
+        groupName,
+      })(groupConfig),
+    )
+      .chain(ensurePackageJsonsExist(path.dirname(configPath)))
+      .map(paths => ({
+        ...config,
+        [groupName]: {
+          ...groupConfig,
+          applications: groupConfig.applications.concat(paths),
+        },
+      })),
+  );
 }

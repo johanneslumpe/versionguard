@@ -9,8 +9,6 @@ import {
 } from '../../core/config';
 import { emphasize } from '../../core/utils';
 
-const { log } = console;
-
 interface ConfigData {
   config: {
     contents: VersionGuardConfig;
@@ -25,11 +23,11 @@ export async function configMiddleware(
   let config: VersionGuardConfig;
   if (!configPath) {
     configPath = getConfigPathForBase('.');
-    log(
+    console.log(
       emphasize`No config file found, creating config at path: ${configPath}`,
     );
     config = {};
-    await writeConfig(configPath, config);
+    await writeConfig(configPath)(config).run();
   } else {
     config = await readConfig(configPath);
   }

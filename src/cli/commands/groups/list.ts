@@ -1,7 +1,10 @@
+import { fromEither } from 'fp-ts/lib/TaskEither';
+
 import { ArgvWithGlobalOptions } from '../../types';
 import { getGroupList } from '../../../core/groups';
 import { emphasize } from '../../../core/utils';
-import { info } from '../../logger';
+import { HandlerResult } from '../../HandlerResult';
+import { LogMessage } from '../../LogMessage';
 
 export function listGroupsCommand(
   yargs: ArgvWithGlobalOptions,
@@ -11,15 +14,22 @@ export function listGroupsCommand(
     'show list of all registered groups',
     yargs => yargs,
     argv => {
-      argv._asyncResult = (async () => {
-        const existingGroups = getGroupList(argv.config.contents);
-        if (!existingGroups.length) {
-          info('No groups found');
-        } else {
-          info('Groups found:');
-          existingGroups.forEach(group => info(emphasize`${group}`));
-        }
-      })();
+      argv._asyncResult = fromEither(
+        getGroupList(argv.config.contents).map(groups => {
+          return HandlerResult.create(
+            LogMessage.create(
+              groups.length
+                ? `Groups found:\n${groups
+                    .map(group => emphasize`${group}\n`)
+                    .join('')
+                    .trim()}`
+                : 'No groups found',
+              'info',
+            ),
+            groups,
+          );
+        }),
+      );
     },
   );
 }

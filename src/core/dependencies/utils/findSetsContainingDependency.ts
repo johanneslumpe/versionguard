@@ -1,5 +1,4 @@
-import { DependencySetConfig } from '../create-set';
-import { Dictionary } from '../../types';
+import { Dictionary, DependencySetConfig } from '../../types';
 
 export function findSetsContainingDependency(
   dependencyName: string,

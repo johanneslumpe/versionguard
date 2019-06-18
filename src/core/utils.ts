@@ -1,11 +1,12 @@
 import chalk from 'chalk';
 import semver from 'semver';
 import path from 'path';
+import { left, Either, right, tryCatch } from 'fp-ts/lib/Either';
 
 import { VersionGuardConfig } from './config';
 import { GroupConfig } from './groups';
-import { DependencySetConfig } from './dependencies';
 import { VersionGuardError } from './errors';
+import { DependencySetConfig } from './types';
 
 function emphasized(str: string): string {
   return chalk.underline.bold(str);
@@ -25,26 +26,30 @@ export function emphasize(
 export function getGroupConfig(
   groupName: string,
   config: VersionGuardConfig,
-): GroupConfig {
+): Either<VersionGuardError, GroupConfig> {
   const groupConfig = config[groupName];
   if (!groupConfig) {
-    throw VersionGuardError.from(emphasize`Group ${groupName} does not exist!`);
+    return left(
+      VersionGuardError.from(emphasize`Group ${groupName} does not exist!`),
+    );
   }
-  return groupConfig;
+  return right(groupConfig);
 }
 
 export function getDependencySetConfig(
   setName: string,
   config: GroupConfig,
-): DependencySetConfig {
+): Either<VersionGuardError, DependencySetConfig> {
   const setConfig = config.dependencies[setName];
   if (!setConfig) {
-    throw VersionGuardError.from(
-      emphasize`Dependency set ${setName} does not exist!`,
+    return left(
+      VersionGuardError.from(
+        emphasize`Dependency set ${setName} does not exist!`,
+      ),
     );
   }
 
-  return setConfig;
+  return right(setConfig);
 }
 
 const { hasOwnProperty } = Object.prototype;
@@ -57,25 +62,26 @@ export function isNodeJSError(err: Error): err is NodeJS.ErrnoException {
   );
 }
 
-function getMinSemverVersion(version: string): semver.SemVer | null {
-  try {
-    return (!!version && semver.minVersion(version)) || null;
-  } catch (e) {
-    return null;
-  }
-}
-
-export function getMinSemverVersionOrThrow(
+export function getMinSemverVersion(
   version: string,
   dependencyName: string,
-): semver.SemVer {
-  const minVersion = getMinSemverVersion(version);
-  if (!minVersion) {
-    throw VersionGuardError.from(
-      emphasize`${version} for ${dependencyName} is not a valid semver range`,
-    );
-  }
-  return minVersion;
+): Either<VersionGuardError, semver.SemVer> {
+  return tryCatch(
+    () => {
+      const v = semver.minVersion(version);
+      // checking for `version` here too, to ensure
+      // that empty version are caught. `minVersion` will not fail on an empty version
+      // but return a SemVer object for version `0.0.0` instead.
+      if (!version || !v) {
+        throw new Error('invalid version');
+      }
+      return v;
+    },
+    () =>
+      VersionGuardError.from(
+        emphasize`${version} for ${dependencyName} is not a valid semver range`,
+      ),
+  );
 }
 
 export function normalizePaths({

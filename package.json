@@ -38,6 +38,7 @@
     "chalk": "^2.4.2",
     "cli-table3": "^0.5.1",
     "find-up": "^4.0.0",
+    "fp-ts": "^1.18.2",
     "humanize-duration": "^3.18.0",
     "inquirer": "^6.3.1",
     "json5": "^2.1.0",

@@ -2,12 +2,12 @@ import semver from 'semver';
 import path from 'path';
 import fs from 'fs';
 import pluralize from 'pluralize';
+import { TaskEither, tryCatch } from 'fp-ts/lib/TaskEither';
 
 import { VersionGuardConfig } from './config';
 import { Dictionary } from './types';
 import { getMinSemverVersion, emphasize } from './utils';
 import { VersionGuardError } from './errors';
-import { TaskEither, tryCatch } from 'fp-ts/lib/TaskEither';
 
 interface PackageJson {
   dependencies?: Dictionary<string>;
@@ -58,6 +58,7 @@ async function readPackageJsons({
     acc[applications[index]] = {
       ...parsed.dependencies,
       ...parsed.devDependencies,
+      // TODO use peer dependencies as well?
     };
     return acc;
   }, result);

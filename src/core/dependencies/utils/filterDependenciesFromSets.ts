@@ -1,4 +1,5 @@
 import { omit } from 'lodash/fp';
+
 import { GroupConfig } from '../../groups';
 
 interface FilterSetsOptions {

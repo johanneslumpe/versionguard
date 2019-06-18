@@ -1,16 +1,13 @@
 import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
 import { writeConfig, VersionGuardConfig } from '../../../core/config';
-import {
-  addDependency,
-  AddDependencyChangeType,
-  AddDependencyResult,
-} from '../../../core/dependencies';
+import { addDependency, AddDependencyResult } from '../../../core/dependencies';
 import { VersionGuardError } from '../../../core/errors';
 import inquirer from 'inquirer';
 import { tryCatch, fromEither, TaskEither } from 'fp-ts/lib/TaskEither';
 import { HandlerResult } from '../../HandlerResult';
 import { LogMessage } from '../../LogMessage';
+import { AddDependencyChangeType } from '../../../core/dependencies/utils/filterDependencyFromSetsWithChangeType';
 
 function handleExistingDependency({
   error,

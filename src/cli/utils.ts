@@ -1,6 +1,7 @@
 import { ArgvWithGlobalOptions } from './types';
 import { VersionGuardError, VersionGuardErrorCode } from '../core/errors';
 import Table, { HorizontalTable, CrossTable } from 'cli-table3';
+import logSymbols = require('log-symbols');
 
 type CommandCreator = (yargs: ArgvWithGlobalOptions) => ArgvWithGlobalOptions;
 
@@ -58,4 +59,8 @@ export function getHorizontalTableWithHeaders(head: string[]): HorizontalTable {
 
 export function getCrossTableWithHeaders(head: string[]): CrossTable {
   return getTable(head) as CrossTable;
+}
+
+export function getLogSymbolForStatus(passed: boolean): string {
+  return passed ? logSymbols.success : logSymbols.error;
 }

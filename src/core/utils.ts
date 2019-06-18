@@ -1,11 +1,11 @@
 import chalk from 'chalk';
 import semver from 'semver';
 import path from 'path';
+import { left, Either, right, tryCatch } from 'fp-ts/lib/Either';
 
 import { VersionGuardConfig } from './config';
 import { GroupConfig } from './groups';
 import { VersionGuardError } from './errors';
-import { left, Either, right } from 'fp-ts/lib/Either';
 import { DependencySetConfig } from '../../lib/core';
 
 function emphasized(str: string): string {
@@ -62,27 +62,26 @@ export function isNodeJSError(err: Error): err is NodeJS.ErrnoException {
   );
 }
 
-function _getMinSemverVersion(version: string): semver.SemVer | null {
-  try {
-    return (!!version && semver.minVersion(version)) || null;
-  } catch (e) {
-    return null;
-  }
-}
-
 export function getMinSemverVersion(
   version: string,
   dependencyName: string,
 ): Either<VersionGuardError, semver.SemVer> {
-  const minVersion = _getMinSemverVersion(version);
-  if (!minVersion) {
-    return left(
+  return tryCatch(
+    () => {
+      const v = semver.minVersion(version);
+      // checking for `version` here too, to ensure
+      // that empty version are caught. `minVersion` will not fail on an empty version
+      // but return a SemVer object for version `0.0.0` instead.
+      if (!version || !v) {
+        throw new Error('invalid version');
+      }
+      return v;
+    },
+    () =>
       VersionGuardError.from(
         emphasize`${version} for ${dependencyName} is not a valid semver range`,
       ),
-    );
-  }
-  return right(minVersion);
+  );
 }
 
 export function normalizePaths({

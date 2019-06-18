@@ -1,7 +1,8 @@
-import { VersionGuardConfig } from '../config';
-import { emphasize } from '../utils';
-import { VersionGuardError } from '../errors';
 import { Either, left, right } from 'fp-ts/lib/Either';
+
+import { emphasize } from '../utils';
+import { VersionGuardConfig } from '../config';
+import { VersionGuardError } from '../errors';
 
 export function renameGroup(
   oldname: string,

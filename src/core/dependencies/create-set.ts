@@ -1,12 +1,12 @@
-import { left, Either, right } from 'fp-ts/lib/Either';
+import { Either } from 'fp-ts/lib/Either';
 
-import { emphasize, getGroupConfig } from '../utils';
+import { getGroupConfig } from '../utils';
 import { DependencySetConfig } from '../types';
 import { VersionGuardConfig } from '../config';
 import { VersionGuardError } from '../errors';
-import { GroupConfig } from '../groups';
+import { ensureSetDoesNotExist } from './utils/ensureSetDoesNotExist';
 
-export function createEmptyDependencySetConfig(): DependencySetConfig {
+function createEmptyDependencySetConfig(): DependencySetConfig {
   return {
     dependencySemvers: {},
     gracePeriod: Infinity,
@@ -17,16 +17,6 @@ interface CreateDependencySetInGroupOptions {
   setName: string;
   groupName: string;
   config: VersionGuardConfig;
-}
-
-function ensureSetDoesNotExist(
-  setName: string,
-): (config: GroupConfig) => Either<VersionGuardError, GroupConfig> {
-  return config => {
-    return !config.dependencies[setName]
-      ? right(config)
-      : left(VersionGuardError.from(emphasize`Set ${setName} already exists`));
-  };
 }
 
 export function createDependencySetInGroup({

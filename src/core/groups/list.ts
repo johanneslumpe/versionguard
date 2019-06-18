@@ -1,7 +1,6 @@
-import { VersionGuardConfig } from '../config';
 import { Either, right, left } from 'fp-ts/lib/Either';
+import { VersionGuardConfig } from '../config';
 import { VersionGuardError } from '../errors';
-import {} from 'fp-ts/lib/TaskEither';
 
 export function getGroupList(
   config: VersionGuardConfig,

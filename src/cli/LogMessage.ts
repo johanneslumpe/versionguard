@@ -1,16 +1,17 @@
 import logSymbols from 'log-symbols';
 
 import { ObjectValues } from '../core/types';
+import { getLogSymbolForStatus } from './utils';
 
-export function success(msg: string): string {
-  return `${logSymbols.success} ${msg}`;
+function success(msg: string): string {
+  return `${getLogSymbolForStatus(true)} ${msg}`;
 }
 
-export function error(msg: string): string {
-  return `${logSymbols.error} ${msg}`;
+function error(msg: string): string {
+  return `${getLogSymbolForStatus(false)} ${msg}`;
 }
 
-export function warning(msg: string): string {
+function warning(msg: string): string {
   return `${logSymbols.warning} ${msg}`;
 }
 

@@ -1,5 +1,4 @@
 import { HorizontalTable, HorizontalTableRow } from 'cli-table3';
-import logSymbols from 'log-symbols';
 import chalk from 'chalk';
 import pluralize from 'pluralize';
 
@@ -10,16 +9,12 @@ import {
   ApplicationResult,
 } from '../../core/version-check';
 import { VersionGuardError } from '../../core/errors';
-import { getHorizontalTableWithHeaders } from '../utils';
+import { getHorizontalTableWithHeaders, getLogSymbolForStatus } from '../utils';
 import { Dictionary } from '../../core/types';
 import { emphasize } from '../../core/utils';
 import { tryCatch } from 'fp-ts/lib/TaskEither';
 import { HandlerResult } from '../HandlerResult';
 import { LogMessage } from '../LogMessage';
-
-function getSymbolForStatus(passed: boolean): string {
-  return passed ? logSymbols.success : logSymbols.error;
-}
 
 function colorTextForStatus(content: string, passed: boolean): string {
   return (passed ? chalk.green : chalk.red)(content);
@@ -30,7 +25,7 @@ function getDependencyResultRow(result: DependencyResult): HorizontalTableRow {
     colorTextForStatus(result.dependency, result.passed),
     colorTextForStatus(result.currentVersion, result.passed),
     colorTextForStatus(result.requiredVersion, result.passed),
-    getSymbolForStatus(result.passed),
+    getLogSymbolForStatus(result.passed),
   ];
 }
 

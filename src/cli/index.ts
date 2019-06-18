@@ -29,16 +29,19 @@ export async function executeCli(
       description: 'Path to config file',
     }) as ArgvWithGlobalOptions;
 
-  function handleError(msg: string): void {
-    error(msg);
+  function handleError(err: Error | string): void {
+    const message = err instanceof Error ? err.message : err;
+    error(message);
     // nasty string checking but required in order to show help in case
     // an unknown argument/command is passed due to custom error handling
-    if (msg.toLowerCase().includes('unknown argument')) {
+    if (message.toLowerCase().includes('unknown argument')) {
       cli.showHelp();
     }
 
     if (exitProcessOnError) {
       process.exit(1);
+    } else {
+      deferredPromise.reject(new Error(message));
     }
   }
 
@@ -81,12 +84,11 @@ export async function executeCli(
             (await result._asyncResult.run())
               .map(result => console.log(result.message))
               .map(deferredPromise.resolve)
-              .mapLeft(err => handleError(err.message))
+              .mapLeft(err => handleError(err))
               .mapLeft(deferredPromise.reject);
           }
         } catch (e) {
-          handleError(e.message);
-          deferredPromise.reject(e);
+          handleError(e);
         }
       },
     );

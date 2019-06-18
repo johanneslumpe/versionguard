@@ -39,7 +39,7 @@ export async function executeCli(
     }
 
     if (exitProcessOnError) {
-      // push procexx exiting into next tick to
+      // push process exiting into next tick to
       // ensure output gets logged prior to exiting
       setTimeout(() => process.exit(1), 0);
     } else {

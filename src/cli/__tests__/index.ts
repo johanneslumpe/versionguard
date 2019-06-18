@@ -79,7 +79,7 @@ describe('versionguard', () => {
   afterEach(() => {
     const { stderr, stdout } = stdMocks.flush();
     stdMocks.restore();
-    //output captured data left in stdoutand stderr
+    // output captured data left in stdout and stderr
     const cleanedStderr = cleanCliOutput(stderr);
     if (cleanedStderr) {
       console.log(cleanedStderr);

@@ -6,7 +6,7 @@ import { left, Either, right, tryCatch } from 'fp-ts/lib/Either';
 import { VersionGuardConfig } from './config';
 import { GroupConfig } from './groups';
 import { VersionGuardError } from './errors';
-import { DependencySetConfig } from '../../lib/core';
+import { DependencySetConfig } from './types';
 
 function emphasized(str: string): string {
   return chalk.underline.bold(str);

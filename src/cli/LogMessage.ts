@@ -23,6 +23,7 @@ export const messageTypes = {
   info: 'info',
   success: 'success',
   error: 'error',
+  warning: 'warning',
 } as const;
 
 type MessageType = ObjectValues<typeof messageTypes>;
@@ -49,6 +50,8 @@ export class LogMessage {
         return success(this._message);
       case 'info':
         return info(this._message);
+      case 'warning':
+        return warning(this._message);
       case 'error':
         return error(this._message);
     }

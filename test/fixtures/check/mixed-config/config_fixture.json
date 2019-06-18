@@ -13,7 +13,7 @@
             "semver": "dep_b@1.x"
           }
         },
-        "gracePeriod": Infinity
+        "gracePeriod": 0
       },
       "private": {
         "dependencySemvers": {
@@ -22,7 +22,7 @@
             "semver": "dep_c@1.x"
           }
         },
-        "gracePeriod": Infinity
+        "gracePeriod": 0
       }
     }
   },
@@ -40,7 +40,7 @@
             "semver": "dep_b@1.x"
           }
         },
-        "gracePeriod": Infinity
+        "gracePeriod": 0
       },
       "private": {
         "dependencySemvers": {
@@ -49,7 +49,7 @@
             "semver": "dep_c@1.x"
           }
         },
-        "gracePeriod": Infinity
+        "gracePeriod": 0
       }
     }
   },
@@ -67,7 +67,7 @@
             "semver": "dep_b@1.x"
           }
         },
-        "gracePeriod": Infinity
+        "gracePeriod": 0
       },
       "private-allvalid": {
         "dependencySemvers": {
@@ -76,7 +76,7 @@
             "semver": "dep_c@1.x"
           }
         },
-        "gracePeriod": Infinity
+        "gracePeriod": 0
       }
     }
   },
@@ -94,7 +94,7 @@
             "semver": "dep_b@1.x"
           }
         },
-        "gracePeriod": Infinity
+        "gracePeriod": 0
       },
       "private-allvalid": {
         "dependencySemvers": {
@@ -103,7 +103,7 @@
             "semver": "dep_c@1.x"
           }
         },
-        "gracePeriod": Infinity
+        "gracePeriod": 0
       }
     }
   },
@@ -121,7 +121,7 @@
             "semver": "dep_b@3.x"
           }
         },
-        "gracePeriod": Infinity
+        "gracePeriod": 0
       },
       "private": {
         "dependencySemvers": {
@@ -130,7 +130,7 @@
             "semver": "dep_c@3.x"
           }
         },
-        "gracePeriod": Infinity
+        "gracePeriod": 0
       }
     }
   },
@@ -148,7 +148,7 @@
             "semver": "dep_b@3.x"
           }
         },
-        "gracePeriod": Infinity
+        "gracePeriod": 0
       },
       "private": {
         "dependencySemvers": {
@@ -157,7 +157,7 @@
             "semver": "dep_c@3.x"
           }
         },
-        "gracePeriod": Infinity
+        "gracePeriod": 0
       }
     }
   }

@@ -5,7 +5,7 @@ import pluralize from 'pluralize';
 import { TaskEither, tryCatch } from 'fp-ts/lib/TaskEither';
 
 import { VersionGuardConfig } from './config';
-import { Dictionary } from './types';
+import { Dictionary, ObjectValues } from './types';
 import { getMinSemverVersion, emphasize } from './utils';
 import { VersionGuardError } from './errors';
 
@@ -14,25 +14,38 @@ interface PackageJson {
   devDependencies?: Dictionary<string>;
 }
 
+export const CheckResultType = {
+  PASS: 'PASS',
+  TENTATIVE_PASS: 'TENTATIVE_PASS',
+  FAIL: 'FAIL',
+} as const;
+
+export type CheckResultType = ObjectValues<typeof CheckResultType>;
+
 export interface DependencyResult {
   dependency: string;
   currentVersion: string;
   requiredVersion: string;
+  result: CheckResultType;
+  timeLeftForUpgrade: number;
   passed: boolean;
   upgradeTimeRemaining?: number;
 }
 
 interface GroupCheckResult {
-  readonly passed: boolean;
-  readonly applicationResults: Readonly<Dictionary<ApplicationResult>>;
+  result: CheckResultType;
+  passed: boolean;
+  applicationResults: Readonly<Dictionary<ApplicationResult>>;
 }
 
 export interface ApplicationResult {
+  result: CheckResultType;
   passed: boolean;
   dependencyResults: DependencyResult[];
 }
 
 interface CheckResult {
+  result: CheckResultType;
   passed: boolean;
   groupResults: Dictionary<GroupCheckResult>;
 }
@@ -104,6 +117,7 @@ export function checkDependencies({
       invalidGroupsInvariant({ config, groups: groups });
       const groupResults: Dictionary<GroupCheckResult> = {};
       let allGroupsPassed = true;
+      let allGroupsResult: CheckResultType = 'PASS';
       // TODO refactor all the loops
       const allEntries = Object.entries(config);
       const entriesToCheck = !groups.length
@@ -137,13 +151,19 @@ export function checkDependencies({
           configPath,
           applications: applicationsToCheck,
         });
+        let groupResult: CheckResultType = 'PASS';
         let groupPassed = true;
 
         for (const [, setConfig] of dependencySetsToCheck) {
+          const now = Date.now();
           for (const dependency of Object.keys(setConfig.dependencySemvers)) {
-            const [, requiredDependencyVersion] = setConfig.dependencySemvers[
-              dependency
-            ].semver.split('@');
+            const dependencyConfig = setConfig.dependencySemvers[dependency];
+            const gracePeriodThreshold =
+              dependencyConfig.dateAdded + setConfig.gracePeriod;
+            const isWithinGracePeriod = now < gracePeriodThreshold;
+            const [, requiredDependencyVersion] = dependencyConfig.semver.split(
+              '@',
+            );
             for (const application of applicationsToCheck) {
               const dependencyVersion =
                 dependenciesByApplication[application][dependency];
@@ -162,17 +182,56 @@ export function checkDependencies({
               const appResult =
                 applicationDependencyResults[application] ||
                 (applicationDependencyResults[application] = {
+                  result: CheckResultType.PASS,
                   passed: true,
                   dependencyResults: [],
                 });
 
               if (!dependencySatisfied) {
-                groupPassed = false;
-                allGroupsPassed = false;
-                appResult.passed = false;
+                if (groupPassed) {
+                  groupPassed = isWithinGracePeriod;
+                }
+                if (
+                  groupResult === CheckResultType.PASS ||
+                  groupResult === CheckResultType.TENTATIVE_PASS
+                ) {
+                  groupResult = isWithinGracePeriod
+                    ? CheckResultType.TENTATIVE_PASS
+                    : CheckResultType.FAIL;
+                }
+                if (allGroupsPassed) {
+                  allGroupsPassed = isWithinGracePeriod;
+                }
+                if (
+                  allGroupsResult === CheckResultType.PASS ||
+                  allGroupsResult === CheckResultType.TENTATIVE_PASS
+                ) {
+                  allGroupsResult = isWithinGracePeriod
+                    ? CheckResultType.TENTATIVE_PASS
+                    : CheckResultType.FAIL;
+                }
+                appResult.passed = appResult.passed && isWithinGracePeriod;
+                if (
+                  appResult.result === CheckResultType.PASS ||
+                  appResult.result === CheckResultType.TENTATIVE_PASS
+                ) {
+                  appResult.result = isWithinGracePeriod
+                    ? CheckResultType.TENTATIVE_PASS
+                    : CheckResultType.FAIL;
+                }
               }
               appResult.dependencyResults.push({
                 dependency,
+                result: dependencySatisfied
+                  ? CheckResultType.PASS
+                  : isWithinGracePeriod
+                  ? CheckResultType.TENTATIVE_PASS
+                  : CheckResultType.FAIL,
+                timeLeftForUpgrade: dependencySatisfied
+                  ? Infinity
+                  : isWithinGracePeriod
+                  ? gracePeriodThreshold - now
+                  : 0,
                 passed: dependencySatisfied,
                 currentVersion: dependencyVersion,
                 requiredVersion: requiredDependencyVersion,
@@ -182,12 +241,14 @@ export function checkDependencies({
         }
 
         groupResults[group] = {
+          result: groupResult,
           passed: groupPassed,
           applicationResults: applicationDependencyResults,
         };
       }
 
       return {
+        result: allGroupsResult,
         passed: allGroupsPassed,
         groupResults,
       };

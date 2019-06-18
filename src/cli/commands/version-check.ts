@@ -1,6 +1,8 @@
 import { HorizontalTable, HorizontalTableRow } from 'cli-table3';
 import chalk from 'chalk';
 import pluralize from 'pluralize';
+import humanizeDuration from 'humanize-duration';
+import logSymbols = require('log-symbols');
 
 import { ArgvWithGlobalOptions } from '../types';
 import {
@@ -25,7 +27,11 @@ function getDependencyResultRow(result: DependencyResult): HorizontalTableRow {
     colorTextForStatus(result.dependency, result.passed),
     colorTextForStatus(result.currentVersion, result.passed),
     colorTextForStatus(result.requiredVersion, result.passed),
-    getLogSymbolForStatus(result.passed),
+    result.result === 'TENTATIVE_PASS'
+      ? `${logSymbols.warning} ${humanizeDuration(result.timeLeftForUpgrade, {
+          units: ['d', 'h'],
+        })} left to upgrade`
+      : getLogSymbolForStatus(result.passed),
   ];
 }
 
@@ -117,7 +123,7 @@ export function versionCheckCommand(
         // TODO refactor this to be less imperative
         return tryCatch(
           async () => {
-            if (!result.passed) {
+            if (result.result === 'FAIL') {
               const groups = Object.entries(result.groupResults);
               const failedGroups = groups
                 .filter(([, groupResult]) => !groupResult.passed)
@@ -133,7 +139,12 @@ export function versionCheckCommand(
             }
 
             return HandlerResult.create(
-              LogMessage.create(`${verboseResult}Check passed!`),
+              result.result === 'PASS'
+                ? LogMessage.create(`${verboseResult}Check passed!`)
+                : LogMessage.create(
+                    `${verboseResult}Check tentatively passed!`,
+                    'warning',
+                  ),
               result,
             );
           },

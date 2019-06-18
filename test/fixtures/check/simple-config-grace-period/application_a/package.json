@@ -1,5 +1,5 @@
 {
-  "name": "application-c",
+  "name": "application-a",
   "dependencies": {
     "dep_a": "^1.0.0",
     "dep_b": "1.2.3",

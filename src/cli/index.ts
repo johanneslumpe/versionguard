@@ -39,7 +39,9 @@ export async function executeCli(
     }
 
     if (exitProcessOnError) {
-      process.exit(1);
+      // push procexx exiting into next tick to
+      // ensure output gets logged prior to exiting
+      setTimeout(() => process.exit(1), 0);
     } else {
       deferredPromise.reject(new Error(message));
     }
@@ -86,6 +88,10 @@ export async function executeCli(
               .map(deferredPromise.resolve)
               .mapLeft(err => handleError(err))
               .mapLeft(deferredPromise.reject);
+          } else {
+            // resolve deferred promise for default case with not arguments
+            // this is required for help output to show
+            deferredPromise.resolve();
           }
         } catch (e) {
           handleError(e);
@@ -97,7 +103,6 @@ export async function executeCli(
   // there is no need to catch any errors because when using
   // when executing in cli-mode this will never be hit since errors will force the process to be exited immediately
   await deferredPromise.promise;
-
   // show help at top level because commands will only show scoped help
   if (!argv._[0]) {
     cli.showHelp();

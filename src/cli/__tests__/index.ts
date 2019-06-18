@@ -97,6 +97,14 @@ describe('versionguard', () => {
         `No config file found, creating config at path: ${process.cwd()}/.versionguardrc.json`,
       );
     });
+
+    it('should show help output when called without arguments', async () => {
+      await executeCli([]);
+      const output = getCleanedMockStdout();
+      expect(output).toContain('versionguard [command]');
+      expect(output).toContain('Commands:');
+      expect(output).toContain('Options:');
+    });
   });
 
   describe('groups', () => {

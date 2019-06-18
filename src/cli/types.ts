@@ -6,9 +6,7 @@ import { VersionGuardError } from '../core/errors';
 
 export type Unbox<T> = T extends Promise<infer R> ? R : T;
 type CustomArgumentProperties = Unbox<ReturnType<typeof configMiddleware>> & {
-  _asyncResult?:
-    | Promise<unknown>
-    | TaskEither<VersionGuardError, HandlerResult>;
+  _asyncResult?: TaskEither<VersionGuardError, HandlerResult>;
 };
 export type ArgumentsWithConfig = Arguments<CustomArgumentProperties>;
 export type ArgvWithGlobalOptions = Argv<

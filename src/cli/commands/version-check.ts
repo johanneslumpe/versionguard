@@ -9,11 +9,13 @@ import {
   DependencyResult,
   ApplicationResult,
 } from '../../core/version-check';
-import { success, info } from '../logger';
 import { VersionGuardError } from '../../core/errors';
 import { getHorizontalTableWithHeaders } from '../utils';
 import { Dictionary } from '../../core/types';
 import { emphasize } from '../../core/utils';
+import { tryCatch } from 'fp-ts/lib/TaskEither';
+import { HandlerResult } from '../HandlerResult';
+import { LogMessage } from '../LogMessage';
 
 function getSymbolForStatus(passed: boolean): string {
   return passed ? logSymbols.success : logSymbols.error;
@@ -88,29 +90,15 @@ export function versionCheckCommand(
         },
       }),
     argv => {
-      argv._asyncResult = (async () => {
-        const { config, verbose, group, set, app } = argv;
-        const result = await checkDependencies({
-          config: config.contents,
-          configPath: config.path,
-          groups: group,
-          sets: set,
-          applications: app,
-        });
-
-        // TODO support --json
-        // format:
-        // {
-        //   failed: [{
-        //     application: string;
-        //     applicationPath: string;
-        //     dependencies: string[];
-        //   }]
-        //  passed: [{
-        //    same as above
-        // }]
-        // }
-
+      const { config, verbose, group, set, app } = argv;
+      argv._asyncResult = checkDependencies({
+        config: config.contents,
+        configPath: config.path,
+        groups: group,
+        sets: set,
+        applications: app,
+      }).chain(result => {
+        let verboseResult = '';
         if (verbose) {
           const tables = Object.entries(result.groupResults).reduce(
             (acc, [, groupResult]) => {
@@ -128,26 +116,35 @@ export function versionCheckCommand(
             },
             [] as HorizontalTable[],
           );
-          info(`\n${tables.map(t => t.toString()).join('\n')}`);
+          verboseResult = `\n${tables.map(t => t.toString()).join('\n')}\n`;
         }
 
-        if (!result.passed) {
-          const groups = Object.entries(result.groupResults);
-          const failedGroups = groups
-            .filter(([, groupResult]) => !groupResult.passed)
-            .map(([group]) => group);
-          throw VersionGuardError.from(
-            `${pluralize(
-              'Group',
-              failedGroups.length,
-            )} ${emphasize`${failedGroups.join(
-              ', ',
-            )} did not meet dependency version requirements`}`,
-          );
-        } else {
-          success('Check passed!');
-        }
-      })();
+        // TODO refactor this to be less imperative
+        return tryCatch(
+          async () => {
+            if (!result.passed) {
+              const groups = Object.entries(result.groupResults);
+              const failedGroups = groups
+                .filter(([, groupResult]) => !groupResult.passed)
+                .map(([group]) => group);
+              throw VersionGuardError.from(
+                `${verboseResult}${pluralize(
+                  'Group',
+                  failedGroups.length,
+                )} ${emphasize`${failedGroups.join(
+                  ', ',
+                )} did not meet dependency version requirements`}`,
+              );
+            }
+
+            return HandlerResult.create(
+              LogMessage.create(`${verboseResult}Check passed!`),
+              result,
+            );
+          },
+          (err: unknown) => err as VersionGuardError,
+        );
+      });
     },
   );
 }

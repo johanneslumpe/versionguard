@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import yargs from 'yargs/yargs';
 
 import { configMiddleware } from './middleware/config';
-import { error, success } from './logger';
+import { error } from './logger';
 import { ArgvWithGlobalOptions, ArgumentsWithConfig } from './types';
 import { pipeCommands, deferred } from './utils';
 import { addGroupCommands } from './commands/groups/index';
@@ -42,10 +42,6 @@ export async function executeCli(
     }
   }
 
-  function isPromise(x: any): x is Promise<any> {
-    return !!x.then;
-  }
-
   // not using `commandDir` to ensure type-checking works as expected
   // within builders and handlers
   // we have to `await` the result because some commands return promises
@@ -82,16 +78,11 @@ export async function executeCli(
         try {
           const result = await argv;
           if (result._asyncResult) {
-            if (isPromise(result._asyncResult)) {
-              await result._asyncResult;
-              deferredPromise.resolve();
-            } else {
-              (await result._asyncResult.run())
-                .map(result => console.log(result.message))
-                .map(deferredPromise.resolve)
-                .mapLeft(err => handleError(err.message))
-                .mapLeft(deferredPromise.reject);
-            }
+            (await result._asyncResult.run())
+              .map(result => console.log(result.message))
+              .map(deferredPromise.resolve)
+              .mapLeft(err => handleError(err.message))
+              .mapLeft(deferredPromise.reject);
           }
         } catch (e) {
           handleError(e.message);

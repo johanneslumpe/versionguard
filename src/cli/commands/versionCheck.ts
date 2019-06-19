@@ -9,7 +9,7 @@ import {
   DependencyResult,
   ApplicationResult,
   CheckResultType,
-} from '../../core/version-check';
+} from '../../core/versionCheck';
 import { VersionGuardError } from '../../core/errors';
 import {
   getHorizontalTableWithHeaders,

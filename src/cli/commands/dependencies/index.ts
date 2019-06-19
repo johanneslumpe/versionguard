@@ -1,9 +1,10 @@
 import { ArgvWithGlobalOptions } from '../../types';
 import { pipeCommands } from '../../utils';
 import { addDependencyCommand } from './add';
-import { deleteDependencySetCommand } from './delete-set';
-import { createDependencySetCommand } from './create-set';
+import { deleteDependencySetCommand } from './deleteSet';
+import { createDependencySetCommand } from './createSet';
 import { removeDependencyCommand } from './remove';
+import { setGracePeriodCommand } from './setGracePeriod';
 
 export function addDependencyCommands(
   yargs: ArgvWithGlobalOptions,
@@ -13,5 +14,6 @@ export function addDependencyCommands(
     createDependencySetCommand,
     deleteDependencySetCommand,
     removeDependencyCommand,
+    setGracePeriodCommand,
   )(yargs);
 }

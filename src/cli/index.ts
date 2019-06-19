@@ -3,12 +3,12 @@ import chalk from 'chalk';
 import yargs from 'yargs/yargs';
 
 import { configMiddleware } from './middleware/config';
-import { error } from './logger';
+import { error } from './logging';
 import { ArgvWithGlobalOptions, ArgumentsWithConfig } from './types';
 import { pipeCommands, deferred } from './utils';
 import { addGroupCommands } from './commands/groups/index';
 import { addDependencyCommands } from './commands/dependencies';
-import { versionCheckCommand } from './commands/version-check';
+import { versionCheckCommand } from './commands/versionCheck';
 import { addApplicationCommands } from './commands/applications';
 
 export async function executeCli(
@@ -86,8 +86,7 @@ export async function executeCli(
             (await result._asyncResult.run())
               .map(result => console.log(result.message))
               .map(deferredPromise.resolve)
-              .mapLeft(err => handleError(err))
-              .mapLeft(deferredPromise.reject);
+              .mapLeft(err => handleError(err));
           } else {
             // resolve deferred promise for default case with not arguments
             // this is required for help output to show

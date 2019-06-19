@@ -31,7 +31,7 @@ export function removeApplication({
       [groupName]: {
         ...groupConfig,
         applications: groupConfig.applications.filter(
-          path => !paths.includes(path),
+          application => !paths.includes(application.path),
         ),
       },
     })),

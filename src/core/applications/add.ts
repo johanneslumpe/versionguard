@@ -5,13 +5,29 @@ import { getGroupConfig, normalizePaths } from '../utils';
 import { VersionGuardConfig } from '../config';
 import { VersionGuardError } from '../errors';
 import { ensurePathsDoNotExist } from './utils/ensurePathsDoNotExist';
-import { ensurePackageJsonsExist } from './utils/ensurePackageJsonsExist';
+import { readApplicationMetaDataForPaths } from './utils/ensurePackageJsonsExist';
+import { PackageJson } from '../types';
 
 interface AddApplicationOptions {
   relativePaths: string[];
   groupName: string;
   configPath: string;
   config: VersionGuardConfig;
+}
+
+export interface Application {
+  name: string;
+  path: string;
+}
+
+function createApplication([path, { name }]: readonly [
+  string,
+  PackageJson,
+]): Application {
+  return {
+    name: name || path,
+    path,
+  };
 }
 
 export function addApplications({
@@ -26,14 +42,22 @@ export function addApplications({
         paths: normalizePaths({ configPath, relativePaths }),
         groupName,
       })(groupConfig),
-    )
-      .chain(ensurePackageJsonsExist(path.dirname(configPath)))
-      .map(paths => ({
-        ...config,
-        [groupName]: {
-          ...groupConfig,
-          applications: groupConfig.applications.concat(paths),
-        },
-      })),
+    ).chain(paths =>
+      readApplicationMetaDataForPaths(path.dirname(configPath))(paths).map(
+        packageJsons => ({
+          ...config,
+          [groupName]: {
+            ...groupConfig,
+            applications: groupConfig.applications.concat(
+              packageJsons
+                .map(
+                  (packageJson, index) => [paths[index], packageJson] as const,
+                )
+                .map(createApplication),
+            ),
+          },
+        }),
+      ),
+    ),
   );
 }

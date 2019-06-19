@@ -4,6 +4,7 @@ import { VersionGuardConfig } from '../config';
 import { emphasize } from '../utils';
 import { VersionGuardError } from '../errors';
 import { Dictionary, DependencySetConfig } from '../types';
+import { Application } from '../applications';
 
 export function createEmptyGroupConfig(): GroupConfig {
   return {
@@ -13,7 +14,7 @@ export function createEmptyGroupConfig(): GroupConfig {
 }
 
 export interface GroupConfig {
-  applications: string[];
+  applications: Application[];
   dependencies: Dictionary<DependencySetConfig>;
 }
 

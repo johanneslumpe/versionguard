@@ -157,7 +157,7 @@ describe('versionguard', () => {
 
       expect(getCleanedMockStdout()).toContain(`a
 
-Applications: application_a, application_b
+Applications: application-a (application_a), application-b (application_b)
 
 Dependency sets
 ┌───────┬────────────────────────┬────────────┐
@@ -178,7 +178,9 @@ Dependency sets
         '✔ Application in path application_a added to group a',
       );
       await executeCliWithConfigPath(configPath, 'groups:info', 'a');
-      expect(getCleanedMockStdout()).toContain('Applications: application_a');
+      expect(getCleanedMockStdout()).toContain(
+        'Applications: application-a (application_a)',
+      );
     });
 
     it('`applications:add` should allow adding multiple applications to a group', async () => {
@@ -190,7 +192,7 @@ Dependency sets
       );
       await executeCliWithConfigPath(configPath, 'groups:info', 'a');
       expect(getCleanedMockStdout()).toContain(
-        'Applications: application_a, application_b',
+        'Applications: application-a (application_a), application-b (application_b)',
       );
     });
 

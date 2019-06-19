@@ -17,7 +17,7 @@ export function ensurePathsDoNotExist({
 ) => Either<VersionGuardError, string[]> {
   return groupConfig => {
     const existingPaths = paths.filter(relativePath =>
-      groupConfig.applications.includes(relativePath),
+      groupConfig.applications.find(({ path }) => path === relativePath),
     );
     return existingPaths.length
       ? left(

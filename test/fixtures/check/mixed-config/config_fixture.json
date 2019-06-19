@@ -1,6 +1,6 @@
 {
   "all-valid-a": {
-    "applications": ["application_a", "application_b"],
+    "applications": [{ "path": "application_a", "name": "application-a"}, {"path": "application_b", "name": "application-b"}],
     "dependencies": {
       "public": {
         "dependencySemvers": {
@@ -27,7 +27,7 @@
     }
   },
   "all-valid-b": {
-    "applications": ["application_c", "application_d"],
+    "applications": [{ "path": "application_c", "name": "application-c"}, {"path": "application_d", "name": "application-d"}],
     "dependencies": {
       "public": {
         "dependencySemvers": {
@@ -54,7 +54,7 @@
     }
   },
   "all-valid-c": {
-    "applications": ["application_e"],
+    "applications": [{ "path": "application_e", "name": "application-e"}],
     "dependencies": {
       "public-allvalid": {
         "dependencySemvers": {
@@ -81,7 +81,7 @@
     }
   },
   "all-valid-d": {
-    "applications": ["application_f"],
+    "applications": [{ "path": "application_f", "name": "application-f"}],
     "dependencies": {
       "public-allvalid": {
         "dependencySemvers": {
@@ -108,7 +108,7 @@
     }
   },
   "all-invalid-a": {
-    "applications": ["application_a", "application_b"],
+    "applications": [{ "path": "application_a", "name": "application-a"}, {"path": "application_b", "name": "application-b"}],
     "dependencies": {
       "public": {
         "dependencySemvers": {
@@ -135,7 +135,7 @@
     }
   },
   "all-invalid-b": {
-    "applications": ["application_c", "application_d"],
+    "applications": [{ "path": "application_c", "name": "application-c"}, {"path": "application_d", "name": "application-d"}],
     "dependencies": {
       "public": {
         "dependencySemvers": {

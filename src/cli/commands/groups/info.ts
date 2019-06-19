@@ -55,7 +55,12 @@ export function groupInfoCommand(
           LogMessage.create(
             `${chalk.bold(`${groupname}\n\n`)}${chalk.bold(
               'Applications: ',
-            )}${groupConfig.applications.join(', ')}\n\n${chalk.bold(
+            )}${groupConfig.applications
+              .map(
+                ({ name, path }) =>
+                  `${name}${path !== name ? ` (${path})` : ''}`,
+              )
+              .join(', ')}\n\n${chalk.bold(
               'Dependency sets',
             )}\n${dependencySetTable.toString()}`.trim(),
           ),

@@ -5,14 +5,9 @@ import pluralize from 'pluralize';
 import { TaskEither, tryCatch } from 'fp-ts/lib/TaskEither';
 
 import { VersionGuardConfig } from './config';
-import { Dictionary, ObjectValues } from './types';
+import { Dictionary, ObjectValues, PackageJson } from './types';
 import { getMinSemverVersion, emphasize } from './utils';
 import { VersionGuardError } from './errors';
-
-interface PackageJson {
-  dependencies?: Dictionary<string>;
-  devDependencies?: Dictionary<string>;
-}
 
 export const CheckResultType = {
   PASS: 'PASS',
@@ -131,7 +126,7 @@ export function checkDependencies({
           dependencies,
         } = groupConfig;
         const applicationsToCheck = applications.length
-          ? availableApplications.filter(app => applications.includes(app))
+          ? availableApplications.filter(app => applications.includes(app.path))
           : availableApplications;
         // this group does not contain any applications we want to check
         if (!applicationsToCheck.length) {
@@ -149,7 +144,7 @@ export function checkDependencies({
         }
         const dependenciesByApplication = await readPackageJsons({
           configPath,
-          applications: applicationsToCheck,
+          applications: applicationsToCheck.map(({ path }) => path),
         });
         let groupResult: CheckResultType = 'PASS';
         let groupPassed = true;
@@ -166,7 +161,7 @@ export function checkDependencies({
             );
             for (const application of applicationsToCheck) {
               const dependencyVersion =
-                dependenciesByApplication[application][dependency];
+                dependenciesByApplication[application.path][dependency];
               // TODO fix directly value access
               const { value } = getMinSemverVersion(
                 dependencyVersion,
@@ -180,8 +175,8 @@ export function checkDependencies({
                 semver.validRange(requiredDependencyVersion),
               );
               const appResult =
-                applicationDependencyResults[application] ||
-                (applicationDependencyResults[application] = {
+                applicationDependencyResults[application.path] ||
+                (applicationDependencyResults[application.path] = {
                   result: CheckResultType.PASS,
                   passed: true,
                   dependencyResults: [],

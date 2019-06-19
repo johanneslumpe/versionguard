@@ -89,6 +89,22 @@ function invalidGroupsInvariant({
   }
 }
 
+function computeResultTypeForUnsatisfiedDependency(
+  currentType: CheckResultType,
+  withinGracePeriod: boolean,
+): CheckResultType {
+  switch (currentType) {
+    // failure is a terminal value
+    case CheckResultType.FAIL:
+      return currentType;
+    case CheckResultType.PASS:
+    case CheckResultType.TENTATIVE_PASS:
+      return withinGracePeriod
+        ? CheckResultType.TENTATIVE_PASS
+        : CheckResultType.FAIL;
+  }
+}
+
 export function checkDependencies({
   config,
   configPath,
@@ -107,7 +123,6 @@ export function checkDependencies({
       // TODO do not use an invariant, refactor into chainable utility
       invalidGroupsInvariant({ config, groups: groups });
       const groupResults: Dictionary<GroupCheckResult> = {};
-      let allGroupsPassed = true;
       let allGroupsResult: CheckResultType = 'PASS';
       // TODO refactor all the loops
       const allEntries = Object.entries(config);
@@ -142,8 +157,7 @@ export function checkDependencies({
           configPath,
           applications: applicationsToCheck.map(({ path }) => path),
         });
-        let groupResult: CheckResultType = 'PASS';
-        let groupPassed = true;
+        let groupResult: CheckResultType = CheckResultType.PASS;
 
         for (const [, setConfig] of dependencySetsToCheck) {
           const now = Date.now();
@@ -178,44 +192,27 @@ export function checkDependencies({
                 });
 
               if (!dependencySatisfied) {
-                if (groupPassed) {
-                  groupPassed = isWithinGracePeriod;
-                }
-                if (
-                  groupResult === CheckResultType.PASS ||
-                  groupResult === CheckResultType.TENTATIVE_PASS
-                ) {
-                  groupResult = isWithinGracePeriod
-                    ? CheckResultType.TENTATIVE_PASS
-                    : CheckResultType.FAIL;
-                }
-                if (allGroupsPassed) {
-                  allGroupsPassed = isWithinGracePeriod;
-                }
-                if (
-                  allGroupsResult === CheckResultType.PASS ||
-                  allGroupsResult === CheckResultType.TENTATIVE_PASS
-                ) {
-                  allGroupsResult = isWithinGracePeriod
-                    ? CheckResultType.TENTATIVE_PASS
-                    : CheckResultType.FAIL;
-                }
-                if (
-                  appResult.result === CheckResultType.PASS ||
-                  appResult.result === CheckResultType.TENTATIVE_PASS
-                ) {
-                  appResult.result = isWithinGracePeriod
-                    ? CheckResultType.TENTATIVE_PASS
-                    : CheckResultType.FAIL;
-                }
+                groupResult = computeResultTypeForUnsatisfiedDependency(
+                  groupResult,
+                  isWithinGracePeriod,
+                );
+                allGroupsResult = computeResultTypeForUnsatisfiedDependency(
+                  allGroupsResult,
+                  isWithinGracePeriod,
+                );
+                appResult.result = computeResultTypeForUnsatisfiedDependency(
+                  appResult.result,
+                  isWithinGracePeriod,
+                );
               }
               appResult.dependencyResults.push({
                 dependency,
                 result: dependencySatisfied
                   ? CheckResultType.PASS
-                  : isWithinGracePeriod
-                  ? CheckResultType.TENTATIVE_PASS
-                  : CheckResultType.FAIL,
+                  : computeResultTypeForUnsatisfiedDependency(
+                      CheckResultType.PASS,
+                      isWithinGracePeriod,
+                    ),
                 timeLeftForUpgrade: dependencySatisfied
                   ? Infinity
                   : isWithinGracePeriod
@@ -236,7 +233,6 @@ export function checkDependencies({
 
       return {
         result: allGroupsResult,
-        passed: allGroupsPassed,
         groupResults,
       };
     },

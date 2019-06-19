@@ -2,12 +2,26 @@ import { omit } from 'lodash/fp';
 
 import { GroupConfig } from '../../groups';
 
-interface FilterSetsOptions {
+export interface FilterSetsOptions {
+  /**
+   * Dependency to remove
+   */
   dependencyName: string;
+
+  /**
+   * Names of sets to remove dependency from
+   */
   setsContainingDependency: string[];
+
+  /**
+   * Group config to update sets in
+   */
   groupConfig: GroupConfig;
 }
 
+/**
+ * Removes a dependency from a given list of set names within a given group config
+ */
 export function filterDependenciesFromSets({
   dependencyName,
   setsContainingDependency,

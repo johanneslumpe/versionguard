@@ -7,7 +7,7 @@ import inquirer from 'inquirer';
 import { tryCatch, fromEither, TaskEither } from 'fp-ts/lib/TaskEither';
 import { HandlerResult } from '../../HandlerResult';
 import { LogMessage } from '../../LogMessage';
-import { AddDependencyChangeType } from '../../../core/dependencies/utils/filterDependencyFromSetsWithChangeType';
+import { AddDependencyChangeType } from '../../../core/dependencies/utils/getGroupConfigWithCleanedDependencySetsAndChangeType';
 
 function handleExistingDependency({
   error,

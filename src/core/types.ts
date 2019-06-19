@@ -12,3 +12,9 @@ export interface DependencySetConfig {
   dependencySemvers: Dictionary<DependencyConfig>;
   gracePeriod: number;
 }
+
+export interface PackageJson {
+  name: string;
+  dependencies?: Dictionary<string>;
+  devDependencies?: Dictionary<string>;
+}

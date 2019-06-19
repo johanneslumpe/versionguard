@@ -11,7 +11,14 @@ import { emphasize } from '../../core/utils';
 
 interface ConfigData {
   config: {
+    /**
+     * Parsed config
+     */
     contents: VersionGuardConfig;
+
+    /**
+     * Path used to retrieve config
+     */
     path: string;
   };
 }

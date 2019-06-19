@@ -1,31 +1,51 @@
 import { HorizontalTable, HorizontalTableRow } from 'cli-table3';
 import chalk from 'chalk';
 import pluralize from 'pluralize';
+import logSymbols = require('log-symbols');
 
 import { ArgvWithGlobalOptions } from '../types';
 import {
   checkDependencies,
   DependencyResult,
   ApplicationResult,
+  CheckResultType,
 } from '../../core/version-check';
 import { VersionGuardError } from '../../core/errors';
-import { getHorizontalTableWithHeaders, getLogSymbolForStatus } from '../utils';
+import {
+  getHorizontalTableWithHeaders,
+  getLogSymbolForStatus,
+  formatDuration,
+} from '../utils';
 import { Dictionary } from '../../core/types';
 import { emphasize } from '../../core/utils';
 import { tryCatch } from 'fp-ts/lib/TaskEither';
 import { HandlerResult } from '../HandlerResult';
 import { LogMessage } from '../LogMessage';
 
-function colorTextForStatus(content: string, passed: boolean): string {
-  return (passed ? chalk.green : chalk.red)(content);
+function colorTextForStatus(
+  content: string,
+  checkResultType: CheckResultType,
+): string {
+  switch (checkResultType) {
+    case 'PASS':
+      return chalk.green(content);
+    case 'TENTATIVE_PASS':
+      return chalk.yellow(content);
+    case 'FAIL':
+      return chalk.red(content);
+  }
 }
 
 function getDependencyResultRow(result: DependencyResult): HorizontalTableRow {
   return [
-    colorTextForStatus(result.dependency, result.passed),
-    colorTextForStatus(result.currentVersion, result.passed),
-    colorTextForStatus(result.requiredVersion, result.passed),
-    getLogSymbolForStatus(result.passed),
+    colorTextForStatus(result.dependency, result.result),
+    colorTextForStatus(result.currentVersion, result.result),
+    colorTextForStatus(result.requiredVersion, result.result),
+    result.result === 'TENTATIVE_PASS'
+      ? `${logSymbols.warning} ${formatDuration(
+          result.timeLeftForUpgrade,
+        )} left to upgrade`
+      : getLogSymbolForStatus(result.result === 'PASS'),
   ];
 }
 
@@ -117,10 +137,10 @@ export function versionCheckCommand(
         // TODO refactor this to be less imperative
         return tryCatch(
           async () => {
-            if (!result.passed) {
+            if (result.result === 'FAIL') {
               const groups = Object.entries(result.groupResults);
               const failedGroups = groups
-                .filter(([, groupResult]) => !groupResult.passed)
+                .filter(([, groupResult]) => groupResult.result === 'FAIL')
                 .map(([group]) => group);
               throw VersionGuardError.from(
                 `${verboseResult}${pluralize(
@@ -133,7 +153,12 @@ export function versionCheckCommand(
             }
 
             return HandlerResult.create(
-              LogMessage.create(`${verboseResult}Check passed!`),
+              result.result === 'PASS'
+                ? LogMessage.create(`${verboseResult}Check passed!`)
+                : LogMessage.create(
+                    `${verboseResult}Check tentatively passed!`,
+                    'warning',
+                  ),
               result,
             );
           },

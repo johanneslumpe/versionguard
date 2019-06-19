@@ -5,35 +5,39 @@ import pluralize from 'pluralize';
 import { TaskEither, tryCatch } from 'fp-ts/lib/TaskEither';
 
 import { VersionGuardConfig } from './config';
-import { Dictionary } from './types';
+import { Dictionary, ObjectValues, PackageJson } from './types';
 import { getMinSemverVersion, emphasize } from './utils';
 import { VersionGuardError } from './errors';
 
-interface PackageJson {
-  dependencies?: Dictionary<string>;
-  devDependencies?: Dictionary<string>;
-}
+export const CheckResultType = {
+  PASS: 'PASS',
+  TENTATIVE_PASS: 'TENTATIVE_PASS',
+  FAIL: 'FAIL',
+} as const;
+
+export type CheckResultType = ObjectValues<typeof CheckResultType>;
 
 export interface DependencyResult {
   dependency: string;
   currentVersion: string;
   requiredVersion: string;
-  passed: boolean;
+  result: CheckResultType;
+  timeLeftForUpgrade: number;
   upgradeTimeRemaining?: number;
 }
 
 interface GroupCheckResult {
-  readonly passed: boolean;
-  readonly applicationResults: Readonly<Dictionary<ApplicationResult>>;
+  result: CheckResultType;
+  applicationResults: Readonly<Dictionary<ApplicationResult>>;
 }
 
 export interface ApplicationResult {
-  passed: boolean;
+  result: CheckResultType;
   dependencyResults: DependencyResult[];
 }
 
 interface CheckResult {
-  passed: boolean;
+  result: CheckResultType;
   groupResults: Dictionary<GroupCheckResult>;
 }
 
@@ -85,6 +89,22 @@ function invalidGroupsInvariant({
   }
 }
 
+function computeResultTypeForUnsatisfiedDependency(
+  currentType: CheckResultType,
+  withinGracePeriod: boolean,
+): CheckResultType {
+  switch (currentType) {
+    // failure is a terminal value
+    case CheckResultType.FAIL:
+      return currentType;
+    case CheckResultType.PASS:
+    case CheckResultType.TENTATIVE_PASS:
+      return withinGracePeriod
+        ? CheckResultType.TENTATIVE_PASS
+        : CheckResultType.FAIL;
+  }
+}
+
 export function checkDependencies({
   config,
   configPath,
@@ -103,7 +123,7 @@ export function checkDependencies({
       // TODO do not use an invariant, refactor into chainable utility
       invalidGroupsInvariant({ config, groups: groups });
       const groupResults: Dictionary<GroupCheckResult> = {};
-      let allGroupsPassed = true;
+      let allGroupsResult: CheckResultType = 'PASS';
       // TODO refactor all the loops
       const allEntries = Object.entries(config);
       const entriesToCheck = !groups.length
@@ -117,7 +137,7 @@ export function checkDependencies({
           dependencies,
         } = groupConfig;
         const applicationsToCheck = applications.length
-          ? availableApplications.filter(app => applications.includes(app))
+          ? availableApplications.filter(app => applications.includes(app.path))
           : availableApplications;
         // this group does not contain any applications we want to check
         if (!applicationsToCheck.length) {
@@ -135,18 +155,23 @@ export function checkDependencies({
         }
         const dependenciesByApplication = await readPackageJsons({
           configPath,
-          applications: applicationsToCheck,
+          applications: applicationsToCheck.map(({ path }) => path),
         });
-        let groupPassed = true;
+        let groupResult: CheckResultType = CheckResultType.PASS;
 
         for (const [, setConfig] of dependencySetsToCheck) {
+          const now = Date.now();
           for (const dependency of Object.keys(setConfig.dependencySemvers)) {
-            const [, requiredDependencyVersion] = setConfig.dependencySemvers[
-              dependency
-            ].semver.split('@');
+            const dependencyConfig = setConfig.dependencySemvers[dependency];
+            const gracePeriodThreshold =
+              dependencyConfig.dateAdded + setConfig.gracePeriod;
+            const isWithinGracePeriod = now < gracePeriodThreshold;
+            const [, requiredDependencyVersion] = dependencyConfig.semver.split(
+              '@',
+            );
             for (const application of applicationsToCheck) {
               const dependencyVersion =
-                dependenciesByApplication[application][dependency];
+                dependenciesByApplication[application.path][dependency];
               // TODO fix directly value access
               const { value } = getMinSemverVersion(
                 dependencyVersion,
@@ -160,20 +185,39 @@ export function checkDependencies({
                 semver.validRange(requiredDependencyVersion),
               );
               const appResult =
-                applicationDependencyResults[application] ||
-                (applicationDependencyResults[application] = {
-                  passed: true,
+                applicationDependencyResults[application.path] ||
+                (applicationDependencyResults[application.path] = {
+                  result: CheckResultType.PASS,
                   dependencyResults: [],
                 });
 
               if (!dependencySatisfied) {
-                groupPassed = false;
-                allGroupsPassed = false;
-                appResult.passed = false;
+                groupResult = computeResultTypeForUnsatisfiedDependency(
+                  groupResult,
+                  isWithinGracePeriod,
+                );
+                allGroupsResult = computeResultTypeForUnsatisfiedDependency(
+                  allGroupsResult,
+                  isWithinGracePeriod,
+                );
+                appResult.result = computeResultTypeForUnsatisfiedDependency(
+                  appResult.result,
+                  isWithinGracePeriod,
+                );
               }
               appResult.dependencyResults.push({
                 dependency,
-                passed: dependencySatisfied,
+                result: dependencySatisfied
+                  ? CheckResultType.PASS
+                  : computeResultTypeForUnsatisfiedDependency(
+                      CheckResultType.PASS,
+                      isWithinGracePeriod,
+                    ),
+                timeLeftForUpgrade: dependencySatisfied
+                  ? Infinity
+                  : isWithinGracePeriod
+                  ? gracePeriodThreshold - now
+                  : 0,
                 currentVersion: dependencyVersion,
                 requiredVersion: requiredDependencyVersion,
               });
@@ -182,13 +226,13 @@ export function checkDependencies({
         }
 
         groupResults[group] = {
-          passed: groupPassed,
+          result: groupResult,
           applicationResults: applicationDependencyResults,
         };
       }
 
       return {
-        passed: allGroupsPassed,
+        result: allGroupsResult,
         groupResults,
       };
     },

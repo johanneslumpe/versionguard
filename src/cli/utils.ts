@@ -1,7 +1,9 @@
+import logSymbols = require('log-symbols');
+import humanizeDuration from 'humanize-duration';
+import Table, { HorizontalTable, CrossTable } from 'cli-table3';
+
 import { ArgvWithGlobalOptions } from './types';
 import { VersionGuardError, VersionGuardErrorCode } from '../core/errors';
-import Table, { HorizontalTable, CrossTable } from 'cli-table3';
-import logSymbols = require('log-symbols');
 
 type CommandCreator = (yargs: ArgvWithGlobalOptions) => ArgvWithGlobalOptions;
 
@@ -63,4 +65,11 @@ export function getCrossTableWithHeaders(head: string[]): CrossTable {
 
 export function getLogSymbolForStatus(passed: boolean): string {
   return passed ? logSymbols.success : logSymbols.error;
+}
+
+export function formatDuration(duration: number): string {
+  return humanizeDuration(duration, {
+    units: ['d', 'h'],
+    maxDecimalPoints: 2,
+  });
 }

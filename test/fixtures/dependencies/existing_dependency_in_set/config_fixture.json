@@ -1,6 +1,6 @@
 {
   "a": {
-    "applications": ["application_a"],
+    "applications": [{ "path": "application_a", "name": "application-a"}],
     "dependencies": {
       "public": {
         "dependencySemvers": {

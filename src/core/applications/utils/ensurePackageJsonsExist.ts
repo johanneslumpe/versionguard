@@ -4,10 +4,11 @@ import { TaskEither, tryCatch } from 'fp-ts/lib/TaskEither';
 
 import { emphasize, isNodeJSError } from '../../utils';
 import { VersionGuardError } from '../../errors';
+import { PackageJson } from '../../types';
 
-export function ensurePackageJsonsExist(
+export function readApplicationMetaDataForPaths(
   basePath: string,
-): (relativePaths: string[]) => TaskEither<VersionGuardError, string[]> {
+): (relativePaths: string[]) => TaskEither<VersionGuardError, PackageJson[]> {
   return relativePaths =>
     tryCatch(
       () =>
@@ -19,7 +20,9 @@ export function ensurePackageJsonsExist(
               'package.json',
             );
             try {
-              await fs.promises.stat(packageJsonPath);
+              return JSON.parse(
+                (await fs.promises.readFile(packageJsonPath)).toString(),
+              ) as PackageJson;
             } catch (e) {
               if (isNodeJSError(e) && e.code === 'ENOENT') {
                 throw VersionGuardError.from(
@@ -33,7 +36,7 @@ export function ensurePackageJsonsExist(
               }
             }
           }),
-        ).then(() => relativePaths),
+        ),
       err => VersionGuardError.from(String(err)),
     );
 }

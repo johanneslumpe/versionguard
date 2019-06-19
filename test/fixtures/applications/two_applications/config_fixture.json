@@ -1,6 +1,6 @@
 {
   "a": {
-    "applications": ["application_a", "application_b"],
+    "applications": [{ "path": "application_a", "name": "application-a"}, {"path": "application_b", "name": "application-b"}],
     "dependencies": {}
   }
 }

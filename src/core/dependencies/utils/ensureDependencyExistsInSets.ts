@@ -3,23 +3,35 @@ import { Either, left, right } from 'fp-ts/lib/Either';
 import { emphasize } from '../../utils';
 import { VersionGuardError } from '../../errors';
 import { findSetsContainingDependency } from './findSetsContainingDependency';
-import { Dictionary, DependencySetConfig } from '../../types';
+import { DependencySetConfig } from '../../types';
 
 interface EnsureDependencyExistsInSetsOptions {
+  /**
+   * Name of dependency to search for
+   */
   dependencyName: string;
+  /**
+   * Name of set to search in
+   */
   setName: string;
-  dependencySetConfig: Dictionary<DependencySetConfig>;
+
+  /**
+   * Dependency set config to search
+   */
+  dependencySetConfig: DependencySetConfig;
 }
 
-export function ensureDependencyExistsInSets({
+/**
+ * Checks for existence of a dependency within a single dependency set
+ */
+export function ensureDependencyExistsInSet({
   dependencyName,
   setName,
   dependencySetConfig,
 }: EnsureDependencyExistsInSetsOptions): Either<VersionGuardError, string[]> {
-  const sets = findSetsContainingDependency(
-    dependencyName,
-    dependencySetConfig,
-  );
+  const sets = findSetsContainingDependency(dependencyName, {
+    [setName]: dependencySetConfig,
+  });
   return sets.length
     ? right(sets)
     : left(

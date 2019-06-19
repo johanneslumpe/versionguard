@@ -1,4 +1,4 @@
-export * from './version-check';
+export * from './versionCheck';
 export * from './config';
 export * from './groups';
 export * from './applications';

@@ -242,75 +242,77 @@ Dependency sets
       );
     });
 
-    it('`dependencies:add` should allow adding a dependency to a dependency set within a group', async () => {
-      await executeCliWithCopiedConfigFixture(
-        'dependencies/one_dependency_set',
-      )('dependencies:add', 'a', 'set_a', 'dep_a@1.0.0');
-      expect(getCleanedMockStdout()).toContain(
-        '✔ Dependency dep_a@1.0.0 successfully added to set set_a within group a',
-      );
+    describe('dependencies:add', () => {
+      it('should allow adding a dependency to a dependency set within a group', async () => {
+        await executeCliWithCopiedConfigFixture(
+          'dependencies/one_dependency_set',
+        )('dependencies:add', 'a', 'set_a', 'dep_a@1.0.0');
+        expect(getCleanedMockStdout()).toContain(
+          '✔ Dependency dep_a@1.0.0 successfully added to set set_a within group a',
+        );
+      });
+
+      it('should prevent adding a dependency with an invalid semver range ', () => {
+        return Promise.all(
+          ['', '@', '@.1.1'].map(async range => {
+            try {
+              await executeCliWithCopiedConfigFixture(
+                'dependencies/one_dependency_set',
+              )('dependencies:add', 'a', 'set_a', `dep_a${range}`);
+              // should never get here
+              guard();
+            } catch (e) {
+              expect(getCleanedMockStdout()).toBe(
+                `✖ ${range.replace(
+                  '@',
+                  '',
+                )} for dep_a is not a valid semver range`,
+              );
+            }
+          }),
+        );
+      });
+
+      it('should allow allow moving a dependency between dependency sets within a group', async () => {
+        // need to hook into the real stdout for a bit
+        stdMocks.restore();
+        const stdin = mockStdin.stdin();
+        const cliExecution = executeCliWithCopiedConfigFixture(
+          'dependencies/existing_dependency_in_set',
+        )('dependencies:add', 'a', 'private', 'dep_a@1.0.0');
+
+        await waitForStdout('Would you like to migrate');
+        stdMocks.use();
+        stdin.send('y\n').restore();
+
+        const { configPath } = await cliExecution;
+        expect(getCleanedMockStdout()).toContain(
+          '✔ Dependency dep_a@1.0.0 successfully migrated to set private within group a',
+        );
+
+        await executeCliWithConfigPath(configPath, 'groups:info', 'a');
+        expect(getCleanedMockStdout()).toContain(trim`
+          │public │            │Infinity    │
+          │private│dep_a@1.0.0 │Infinity    │
+        `);
+      });
+
+      it("should allow updating a dependency's version within the same set", async () => {
+        const { configPath } = await executeCliWithCopiedConfigFixture(
+          'dependencies/existing_dependency_in_set',
+        )('dependencies:add', 'a', 'public', 'dep_a@2.0.0');
+        expect(getCleanedMockStdout()).toContain(
+          '✔ Dependency dep_a@2.0.0 successfully updated within set public',
+        );
+        await executeCliWithConfigPath(configPath, 'groups:info', 'a');
+        expect(getCleanedMockStdout()).toContain(trim`
+          │public │dep_a@2.0.0 │Infinity    │
+          │private│            │Infinity    │
+        `);
+      });
     });
 
-    it('`dependencies:add` should prevent adding a dependency with an invalid semver range ', () => {
-      return Promise.all(
-        ['', '@', '@.1.1'].map(async range => {
-          try {
-            await executeCliWithCopiedConfigFixture(
-              'dependencies/one_dependency_set',
-            )('dependencies:add', 'a', 'set_a', `dep_a${range}`);
-            // should never get here
-            guard();
-          } catch (e) {
-            expect(getCleanedMockStdout()).toBe(
-              `✖ ${range.replace(
-                '@',
-                '',
-              )} for dep_a is not a valid semver range`,
-            );
-          }
-        }),
-      );
-    });
-
-    it('should allow allow moving a dependency between dependency sets within a group', async () => {
-      // need to hook into the real stdout for a bit
-      stdMocks.restore();
-      const stdin = mockStdin.stdin();
-      const cliExecution = executeCliWithCopiedConfigFixture(
-        'dependencies/existing_dependency_in_set',
-      )('dependencies:add', 'a', 'private', 'dep_a@1.0.0');
-
-      await waitForStdout('Would you like to migrate');
-      stdMocks.use();
-      stdin.send('y\n').restore();
-
-      const { configPath } = await cliExecution;
-      expect(getCleanedMockStdout()).toContain(
-        '✔ Dependency dep_a@1.0.0 successfully migrated to set private within group a',
-      );
-
-      await executeCliWithConfigPath(configPath, 'groups:info', 'a');
-      expect(getCleanedMockStdout()).toContain(trim`
-        │public │            │Infinity    │
-        │private│dep_a@1.0.0 │Infinity    │
-      `);
-    });
-
-    it("should allow updating a dependency's version within the same set", async () => {
-      const { configPath } = await executeCliWithCopiedConfigFixture(
-        'dependencies/existing_dependency_in_set',
-      )('dependencies:add', 'a', 'public', 'dep_a@2.0.0');
-      expect(getCleanedMockStdout()).toContain(
-        '✔ Dependency dep_a@2.0.0 successfully updated within set public',
-      );
-      await executeCliWithConfigPath(configPath, 'groups:info', 'a');
-      expect(getCleanedMockStdout()).toContain(trim`
-        │public │dep_a@2.0.0 │Infinity    │
-        │private│            │Infinity    │
-      `);
-    });
-
-    it('should allow removing a dependency from a dependency set within a group', async () => {
+    it('`dependencies:remove` should allow removing a dependency from a dependency set within a group', async () => {
       const { configPath } = await executeCliWithCopiedConfigFixture(
         'dependencies/existing_dependency_in_set',
       )('dependencies:remove', 'a', 'public', 'dep_a');
@@ -322,6 +324,45 @@ Dependency sets
         │public │            │Infinity    │
         │private│            │Infinity    │
       `);
+    });
+
+    describe('dependencies:grace-period', () => {
+      it('should allow updating of grace period', async () => {
+        const ONE_DAY = 1000 * 60 * 60 * 24;
+        const validValues = [
+          [ONE_DAY, '1 day'],
+          [ONE_DAY / 2, '12 hours'],
+          [ONE_DAY / 3, '8 hours'],
+          ['3d', '3 days'],
+          ['14d', '14 days'],
+          [Infinity, 'Infinity'],
+        ];
+        for (const [cliArgument, expectedOutput] of validValues) {
+          const { configPath } = await executeCliWithCopiedConfigFixture(
+            'dependencies/one_dependency_set',
+          )('dependencies:grace-period', 'a', 'set_a', cliArgument.toString());
+          expect(getCleanedMockStdout()).toContain(
+            '✔ Grace period for dependency set set_a updated',
+          );
+          await executeCliWithConfigPath(configPath, 'groups:info', 'a');
+          expect(getCleanedMockStdout()).toContain(trim`
+            │set_a│            │${expectedOutput.toString().padEnd(12, ' ')}│
+          `);
+        }
+      });
+
+      it('should fail for non-numerical strings', async () => {
+        try {
+          await executeCliWithCopiedConfigFixture(
+            'dependencies/one_dependency_set',
+          )('dependencies:grace-period', 'a', 'set_a', 'invalid');
+          guard();
+        } catch (e) {
+          expect(getCleanedMockStdout()).toContain(
+            '✖ invalid is not a valid grace period',
+          );
+        }
+      });
     });
   });
 

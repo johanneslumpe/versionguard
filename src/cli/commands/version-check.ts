@@ -9,6 +9,7 @@ import {
   checkDependencies,
   DependencyResult,
   ApplicationResult,
+  CheckResultType,
 } from '../../core/version-check';
 import { VersionGuardError } from '../../core/errors';
 import { getHorizontalTableWithHeaders, getLogSymbolForStatus } from '../utils';
@@ -18,20 +19,30 @@ import { tryCatch } from 'fp-ts/lib/TaskEither';
 import { HandlerResult } from '../HandlerResult';
 import { LogMessage } from '../LogMessage';
 
-function colorTextForStatus(content: string, passed: boolean): string {
-  return (passed ? chalk.green : chalk.red)(content);
+function colorTextForStatus(
+  content: string,
+  checkResultType: CheckResultType,
+): string {
+  switch (checkResultType) {
+    case 'PASS':
+      return chalk.green(content);
+    case 'TENTATIVE_PASS':
+      return chalk.yellow(content);
+    case 'FAIL':
+      return chalk.red(content);
+  }
 }
 
 function getDependencyResultRow(result: DependencyResult): HorizontalTableRow {
   return [
-    colorTextForStatus(result.dependency, result.passed),
-    colorTextForStatus(result.currentVersion, result.passed),
-    colorTextForStatus(result.requiredVersion, result.passed),
+    colorTextForStatus(result.dependency, result.result),
+    colorTextForStatus(result.currentVersion, result.result),
+    colorTextForStatus(result.requiredVersion, result.result),
     result.result === 'TENTATIVE_PASS'
       ? `${logSymbols.warning} ${humanizeDuration(result.timeLeftForUpgrade, {
           units: ['d', 'h'],
         })} left to upgrade`
-      : getLogSymbolForStatus(result.passed),
+      : getLogSymbolForStatus(result.result === 'PASS'),
   ];
 }
 
@@ -126,7 +137,7 @@ export function versionCheckCommand(
             if (result.result === 'FAIL') {
               const groups = Object.entries(result.groupResults);
               const failedGroups = groups
-                .filter(([, groupResult]) => !groupResult.passed)
+                .filter(([, groupResult]) => groupResult.result === 'FAIL')
                 .map(([group]) => group);
               throw VersionGuardError.from(
                 `${verboseResult}${pluralize(

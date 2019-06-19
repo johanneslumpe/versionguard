@@ -23,25 +23,21 @@ export interface DependencyResult {
   requiredVersion: string;
   result: CheckResultType;
   timeLeftForUpgrade: number;
-  passed: boolean;
   upgradeTimeRemaining?: number;
 }
 
 interface GroupCheckResult {
   result: CheckResultType;
-  passed: boolean;
   applicationResults: Readonly<Dictionary<ApplicationResult>>;
 }
 
 export interface ApplicationResult {
   result: CheckResultType;
-  passed: boolean;
   dependencyResults: DependencyResult[];
 }
 
 interface CheckResult {
   result: CheckResultType;
-  passed: boolean;
   groupResults: Dictionary<GroupCheckResult>;
 }
 
@@ -178,7 +174,6 @@ export function checkDependencies({
                 applicationDependencyResults[application.path] ||
                 (applicationDependencyResults[application.path] = {
                   result: CheckResultType.PASS,
-                  passed: true,
                   dependencyResults: [],
                 });
 
@@ -205,7 +200,6 @@ export function checkDependencies({
                     ? CheckResultType.TENTATIVE_PASS
                     : CheckResultType.FAIL;
                 }
-                appResult.passed = appResult.passed && isWithinGracePeriod;
                 if (
                   appResult.result === CheckResultType.PASS ||
                   appResult.result === CheckResultType.TENTATIVE_PASS
@@ -227,7 +221,6 @@ export function checkDependencies({
                   : isWithinGracePeriod
                   ? gracePeriodThreshold - now
                   : 0,
-                passed: dependencySatisfied,
                 currentVersion: dependencyVersion,
                 requiredVersion: requiredDependencyVersion,
               });
@@ -237,7 +230,6 @@ export function checkDependencies({
 
         groupResults[group] = {
           result: groupResult,
-          passed: groupPassed,
           applicationResults: applicationDependencyResults,
         };
       }

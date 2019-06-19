@@ -6,12 +6,39 @@ import { VersionGuardError } from '../../errors';
 import { GroupConfig } from '../../groups';
 
 interface AppendDendencyOptions {
+  /**
+   * Versionguard config to update
+   */
   config: VersionGuardConfig;
+
+  /**
+   * Group which contains set to add dependency to
+   */
   groupName: string;
+
+  /**
+   * Group config to update
+   */
   groupConfig: GroupConfig;
+
+  /**
+   * Set to add dependency to
+   */
   setName: string;
+
+  /**
+   * Dependency
+   */
   dependency: string;
+
+  /**
+   * Version of dependency
+   */
   version: string;
+
+  /**
+   * Date when dependency was added, defaults to `Date.now()`
+   */
   dateAdded?: number;
 }
 export function addDependencytoSet({

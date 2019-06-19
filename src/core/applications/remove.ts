@@ -6,9 +6,24 @@ import { VersionGuardError } from '../errors';
 import { ensureApplicationsExist } from './utils/ensureApplicationsExist';
 
 interface RemoveApplicationOptions {
+  /**
+   * Paths to remove, must match paths of applications in config file
+   */
   relativePaths: string[];
+
+  /**
+   * Group to remove applications from
+   */
   groupName: string;
+
+  /**
+   * Versionguard config to update
+   */
   config: VersionGuardConfig;
+
+  /**
+   * Path of config file
+   */
   configPath: string;
 }
 

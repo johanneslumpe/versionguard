@@ -14,7 +14,14 @@ export function createEmptyGroupConfig(): GroupConfig {
 }
 
 export interface GroupConfig {
+  /**
+   * Applications registered with this group
+   */
   applications: Application[];
+
+  /**
+   * Dependency sets registered with this group
+   */
   dependencies: Dictionary<DependencySetConfig>;
 }
 

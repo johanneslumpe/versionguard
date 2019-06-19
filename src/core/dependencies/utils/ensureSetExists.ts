@@ -3,6 +3,9 @@ import { emphasize } from '../../utils';
 import { VersionGuardError } from '../../errors';
 import { GroupConfig } from '../../groups';
 
+/**
+ * Ensures that given set name exists within a group config
+ */
 export function ensureSetExists(
   setName: string,
 ): (config: GroupConfig) => Either<VersionGuardError, GroupConfig> {

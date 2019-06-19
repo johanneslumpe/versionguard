@@ -4,12 +4,28 @@ import { getGroupConfig } from '../utils';
 import { VersionGuardConfig } from '../config';
 import { VersionGuardError } from '../errors';
 import { filterDependenciesFromSets } from './utils/filterDependenciesFromSets';
-import { ensureDependencyExistsInSets } from './utils/ensureDependencyExistsInSets';
+import { ensureDependencyExistsInSet } from './utils/ensureDependencyExistsInSets';
 
 interface RemoveDependencyOptions {
+  /**
+   * Group which contains the dependency set from which to remove a dependency
+   */
   groupName: string;
+
+  /**
+   * Set from which to remove the `dependency`
+   */
   setName: string;
+
+  /**
+   * Dependency to remove in the format of `dependency` or `dependency@version`.
+   * In the latter case, the `version` part is ignored
+   */
   dependency: string;
+
+  /**
+   * Versionguard config to update
+   */
   config: VersionGuardConfig;
 }
 
@@ -21,10 +37,10 @@ export function removeDependency({
 }: RemoveDependencyOptions): Either<VersionGuardError, VersionGuardConfig> {
   const [dependencyName] = dependency.split('@');
   return getGroupConfig(groupName, config).chain(groupConfig =>
-    ensureDependencyExistsInSets({
+    ensureDependencyExistsInSet({
       setName,
       dependencyName,
-      dependencySetConfig: groupConfig.dependencies,
+      dependencySetConfig: groupConfig.dependencies[setName],
     }).map(setsContainingDependency => ({
       ...config,
       [groupName]: filterDependenciesFromSets({

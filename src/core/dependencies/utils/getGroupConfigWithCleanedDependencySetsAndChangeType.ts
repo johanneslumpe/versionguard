@@ -3,7 +3,10 @@ import { Either, right, left } from 'fp-ts/lib/Either';
 import { emphasize } from '../../utils';
 import { VersionGuardError } from '../../errors';
 import { GroupConfig } from '../../groups';
-import { filterDependenciesFromSets } from './filterDependenciesFromSets';
+import {
+  filterDependenciesFromSets,
+  FilterSetsOptions,
+} from './filterDependenciesFromSets';
 
 export const AddDependencyUpdateTypes = {
   MIGRATED_TO_SET: 'MIGRATED_TO_SET',
@@ -13,21 +16,40 @@ export const AddDependencyUpdateTypes = {
 
 export type AddDependencyChangeType = keyof typeof AddDependencyUpdateTypes;
 
-export function filterDependencyFromSetsWithChangeType({
+interface GetGroupConfigWithCleanedDependencySetsAndChangeTypeOptions
+  extends FilterSetsOptions {
+  /**
+   * Set that dependendency will be added to
+   */
+  setToAddDependencyTo: string;
+
+  /**
+   * Whether dependency should be migrated
+   */
+  migrateDependency: boolean;
+
+  /**
+   * Name of group to add dependency to
+   */
+  groupName: string;
+}
+
+/**
+ * Determines which update type is required to add a dependency to a given set within a group
+ * and returns a tuple of the required change type and a prepared group config. The config which will
+ * have all dependency sets cleaned of the dependency about to be added, if required.
+ */
+export function getGroupConfigWithCleanedDependencySetsAndChangeType({
   setsContainingDependency,
   setToAddDependencyTo,
   dependencyName,
   groupConfig,
   migrateDependency,
   groupName,
-}: {
-  setsContainingDependency: string[];
-  setToAddDependencyTo: string;
-  dependencyName: string;
-  groupConfig: GroupConfig;
-  migrateDependency: boolean;
-  groupName: string;
-}): Either<VersionGuardError, [AddDependencyChangeType, GroupConfig]> {
+}: GetGroupConfigWithCleanedDependencySetsAndChangeTypeOptions): Either<
+  VersionGuardError,
+  [AddDependencyChangeType, GroupConfig]
+> {
   if (setsContainingDependency.includes(setToAddDependencyTo)) {
     return right([
       AddDependencyUpdateTypes.UPDATED_WITHIN_SET,

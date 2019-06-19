@@ -6,8 +6,19 @@ import { VersionGuardError } from '../errors';
 import { ensureSetExists } from './utils/ensureSetExists';
 
 interface DeleteSetOptions {
+  /**
+   * Name of set to delete
+   */
   setName: string;
+
+  /**
+   * Group to delete set from
+   */
   groupName: string;
+
+  /**
+   * Versionguard config to update
+   */
   config: VersionGuardConfig;
 }
 

@@ -14,8 +14,19 @@ function createEmptyDependencySetConfig(): DependencySetConfig {
 }
 
 interface CreateDependencySetInGroupOptions {
+  /**
+   * Name of set to create
+   */
   setName: string;
+
+  /**
+   * Group to create set in
+   */
   groupName: string;
+
+  /**
+   * Versionguard config to update
+   */
   config: VersionGuardConfig;
 }
 

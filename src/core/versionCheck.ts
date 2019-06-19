@@ -172,18 +172,22 @@ export function checkDependencies({
             for (const application of applicationsToCheck) {
               const dependencyVersion =
                 dependenciesByApplication[application.path][dependency];
-              // TODO fix directly value access
-              const { value } = getMinSemverVersion(
-                dependencyVersion,
-                dependency,
-              );
-              if (value instanceof Error) {
-                throw value;
+              // instantly fail if dependency does not exist at all
+              let dependencySatisfied = !!dependencyVersion;
+              if (dependencyVersion) {
+                // TODO fix directly value access
+                const { value } = getMinSemverVersion(
+                  dependencyVersion,
+                  dependency,
+                );
+                if (value instanceof Error) {
+                  throw value;
+                }
+                dependencySatisfied = semver.satisfies(
+                  value,
+                  semver.validRange(requiredDependencyVersion),
+                );
               }
-              const dependencySatisfied = semver.satisfies(
-                value,
-                semver.validRange(requiredDependencyVersion),
-              );
               const appResult =
                 applicationDependencyResults[application.path] ||
                 (applicationDependencyResults[application.path] = {

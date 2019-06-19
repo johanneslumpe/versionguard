@@ -39,7 +39,7 @@ function colorTextForStatus(
 function getDependencyResultRow(result: DependencyResult): HorizontalTableRow {
   return [
     colorTextForStatus(result.dependency, result.result),
-    colorTextForStatus(result.currentVersion, result.result),
+    colorTextForStatus(result.currentVersion || '-', result.result),
     colorTextForStatus(result.requiredVersion, result.result),
     result.result === 'TENTATIVE_PASS'
       ? `${logSymbols.warning} ${formatDuration(

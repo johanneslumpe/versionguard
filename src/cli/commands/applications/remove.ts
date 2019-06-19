@@ -20,7 +20,7 @@ export function removeApplicationCommand(
         })
         .positional('applicationpaths', {
           describe:
-            'Path of application to remove, relative to version-guard config file',
+            'Path(s) of application(s) to remove, relative to version-guard config file',
         })
         .string('groupname')
         .string('applicationpaths')

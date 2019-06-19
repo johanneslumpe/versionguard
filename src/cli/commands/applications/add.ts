@@ -19,7 +19,7 @@ export function addApplicationCommand(
           describe: 'Group to add an application to',
         })
         .positional('applicationpaths', {
-          describe: 'Paths of applications to add, relative to config file',
+          describe: 'Path(s) of application(s) to add, relative to config file',
         })
         .example('applications:add', 'my-group app-a app-b app-c')
         .string('groupname')

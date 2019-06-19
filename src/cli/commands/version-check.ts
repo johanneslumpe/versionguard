@@ -1,7 +1,6 @@
 import { HorizontalTable, HorizontalTableRow } from 'cli-table3';
 import chalk from 'chalk';
 import pluralize from 'pluralize';
-import humanizeDuration from 'humanize-duration';
 import logSymbols = require('log-symbols');
 
 import { ArgvWithGlobalOptions } from '../types';
@@ -12,7 +11,11 @@ import {
   CheckResultType,
 } from '../../core/version-check';
 import { VersionGuardError } from '../../core/errors';
-import { getHorizontalTableWithHeaders, getLogSymbolForStatus } from '../utils';
+import {
+  getHorizontalTableWithHeaders,
+  getLogSymbolForStatus,
+  formatDuration,
+} from '../utils';
 import { Dictionary } from '../../core/types';
 import { emphasize } from '../../core/utils';
 import { tryCatch } from 'fp-ts/lib/TaskEither';
@@ -39,9 +42,9 @@ function getDependencyResultRow(result: DependencyResult): HorizontalTableRow {
     colorTextForStatus(result.currentVersion, result.result),
     colorTextForStatus(result.requiredVersion, result.result),
     result.result === 'TENTATIVE_PASS'
-      ? `${logSymbols.warning} ${humanizeDuration(result.timeLeftForUpgrade, {
-          units: ['d', 'h'],
-        })} left to upgrade`
+      ? `${logSymbols.warning} ${formatDuration(
+          result.timeLeftForUpgrade,
+        )} left to upgrade`
       : getLogSymbolForStatus(result.result === 'PASS'),
   ];
 }

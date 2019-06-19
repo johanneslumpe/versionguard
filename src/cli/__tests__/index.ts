@@ -438,6 +438,23 @@ Dependency sets
       });
     });
 
+    describe('non existing dependencies in sets', () => {
+      it('should not fail', async () => {
+        await executeCliWithCopiedConfigFixture(
+          'check/simple-config-non-existing-dep',
+        )('check', '--verbose');
+        expect(getCleanedMockStdout()).toBe(trim`
+          ⚠
+          ┌─────────────┬───────────┬─────────┬────────┬───────────────────────────────┐
+          │Application  │Dependency │Installed│Required│Valid                          │
+          ├─────────────┼───────────┼─────────┼────────┼───────────────────────────────┤
+          │application_a│nonexisting│-        │1.x     │⚠ Infinity days left to upgrade│
+          └─────────────┴───────────┴─────────┴────────┴───────────────────────────────┘
+          Check tentatively passed!
+        `);
+      });
+    });
+
     describe('some invalid entries within grace period', () => {
       // needs to be in sync with value used in config fixtures
       const DEPENDENCY_ADDED_DATE = 1560081600000;

@@ -1,0 +1,16 @@
+{
+  "all-valid-a": {
+    "applications": [{ "path": "application_a", "name": "application-a"}],
+    "dependencies": {
+      "public": {
+        "dependencySemvers": {
+          "nonexisting": {
+            "dateAdded": 1560081600000,
+            "semver": "nonexisting@1.x"
+          }
+        },
+        "gracePeriod": Infinity
+      }
+    }
+  }
+}

@@ -2,6 +2,10 @@
 
 **Diverging core dependencies between multiple applications are a thing of the past! Versionguard is here to protect your applications from out of sync dependencies - on your terms!**
 
+```
+npm i @johanneslumpe/versionguard -g
+```
+
 ## 📋 Features
 - 🎉 Manage blessed dependency versions across multiple applications with ease
 - 📋 Multiple application groups with multiple dependency sets for tailored version governance

@@ -14,7 +14,7 @@
     "build": "rm -rf ./lib && tsc -p ./tsconfig.build.json",
     "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run lint",
-    "prerelease": "npm run lint && npm run test && npm run docs && git add -A ./docs && git commit -m 'chore: update docs'",
+    "prerelease": "npm run lint && npm run test",
     "release": "standard-version",
     "postrelease": "git push --follow-tags origin master"
   },

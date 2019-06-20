@@ -1,17 +1,17 @@
-# :closed_lock_with_key: Versionguard
+# 🔐 Versionguard
 
 **Diverging core dependencies between multiple applications are a thing of the past! Versionguard is here to protect your applications from out of sync dependencies - on your terms!**
 
-## :clipboard: Features
-- :tada: Manage blessed dependency versions across multiple applications with ease
-- :clipboard: Multiple application groups with multiple dependency sets for tailored version governance
-- :alarm_clock: Grace periods allow for staggered upgrading
-- :vertical_traffic_light: Tiered version checking: pass, tentantive pass and fail
-- :zap: Automatically fail builds on CI when dependencies are out of date
+## 📋 Features
+- 🎉 Manage blessed dependency versions across multiple applications with ease
+- 📋 Multiple application groups with multiple dependency sets for tailored version governance
+- ⏰ Grace periods allow for staggered upgrading
+- 🚦 Tiered version checking: pass, tentantive pass and fail
+- ⚡️ Automatically fail builds on CI when dependencies are out of date
 
 ![Basic workflow](https://johanneslumpe.github.io/versionguard/assets/00_full-basic-flow.svg "Basic workflow")
 
-## :book: Available Commands
+## 📖 Available Commands
 
 ### Version Checking
 
@@ -82,5 +82,5 @@ If you want verbose output, use this flag. Right now only `check` supports verbo
 ### `--config-path`
 By default, versionguard will search for a config file from the current working directory upwards. If it cannot find a config it will conveniently create one for you. In case you want to reference a config file that is not within a directory in the tree above your working directory, you can use this flag to pass a config file path.
 
-## :page_facing_up: License
+## 📄 License
 versionguard is MIT licensed, as found in the [LICENSE][l] file.

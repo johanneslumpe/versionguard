@@ -3,15 +3,16 @@ import { pipe } from 'fp-ts/lib/pipeable';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
-import { writeConfig } from '../../../core/config';
 import { removeDependency } from '../../../core/dependencies/remove';
 import { HandlerResult } from '../../HandlerResult';
 import { LogMessage } from '../../LogMessage';
+import { PipeCommandArgs, writeConfigWithLog } from '../../utils';
+import { VersionGuardError } from '../../../core/errors';
 
 export function removeDependencyCommand(
-  yargs: ArgvWithGlobalOptions,
+  opts: PipeCommandArgs,
 ): ArgvWithGlobalOptions {
-  return yargs.command(
+  return opts.cli.command(
     'dependencies:remove <groupname> <setname> <dependency>',
     'remove dependency from set within group',
     yargs =>
@@ -31,18 +32,30 @@ export function removeDependencyCommand(
     argv => {
       const { config, groupname, setname, dependency } = argv;
       argv._asyncResult = pipe(
-        fromEither(
-          removeDependency({
-            config: config.contents,
-            dependency,
-            groupName: groupname,
-            setName: setname,
-          }),
+        opts.logger.verboseLogTaskEither<VersionGuardError, void>(
+          LogMessage.info(
+            emphasize`Attempting to remove dependency ${dependency} from set ${setname} within group ${groupname}...`,
+          ),
+        )(),
+        chain(() =>
+          fromEither(
+            removeDependency({
+              config: config.contents,
+              dependency,
+              groupName: groupname,
+              setName: setname,
+            }),
+          ),
         ),
-        chain(writeConfig(config.path)),
+        chain(
+          opts.logger.verboseLogTaskEither(
+            LogMessage.info('Dependency removed!'),
+          ),
+        ),
+        chain(writeConfigWithLog(argv.config.path, opts.logger)),
         map(updatedConfig =>
           HandlerResult.create(
-            LogMessage.create(
+            LogMessage.success(
               emphasize`Dependency ${dependency} successfully removed from set ${setname} within group ${groupname}`,
             ),
             updatedConfig,

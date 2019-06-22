@@ -7,12 +7,17 @@ import { IO } from 'fp-ts/lib/IO';
 
 import { configMiddleware } from './middleware/config';
 import { error } from './logging';
-import { ArgvWithGlobalOptions, ArgumentsWithConfig } from './types';
+import {
+  ArgvWithGlobalOptions,
+  ArgumentsWithConfig,
+  ArgumentsWithConfigAndGlobalOptions,
+} from './types';
 import { pipeCommands, deferred } from './utils';
 import { addGroupCommands } from './commands/groups/index';
 import { addDependencyCommands } from './commands/dependencies';
 import { versionCheckCommand } from './commands/versionCheck';
 import { addApplicationCommands } from './commands/applications';
+import { Logger } from './Logger';
 
 export async function executeCli(
   args: string[],
@@ -52,6 +57,7 @@ export async function executeCli(
     });
   }
 
+  const logger = Logger.create();
   // not using `commandDir` to ensure type-checking works as expected
   // within builders and handlers
   // we have to `await` the result because some commands return promises
@@ -60,7 +66,7 @@ export async function executeCli(
     addApplicationCommands,
     addDependencyCommands,
     versionCheckCommand,
-  )(cli)
+  )({ cli, logger })
     .middleware(configMiddleware)
     .recommendCommands()
     .strict()
@@ -70,7 +76,7 @@ export async function executeCli(
       args,
       async (
         err: Error,
-        argv: Promise<ArgumentsWithConfig>,
+        argv: Promise<ArgumentsWithConfigAndGlobalOptions>,
         output?: string,
       ) => {
         // custom parser to enable waiting for handlers to complete.
@@ -87,6 +93,7 @@ export async function executeCli(
 
         try {
           const result = await argv;
+          logger.verbose = result.verbose;
           if (result._asyncResult) {
             // TODO swap out with fluid api below
             // once type error is resolved
@@ -97,7 +104,7 @@ export async function executeCli(
             //   orElse(err => rightIO(handleError(err))),
             // ).run();
             await result._asyncResult
-              .chain(result => rightIO(log(result.message)))
+              .chain(handlerResult => rightIO(log(handlerResult.message)))
               .chain(() => rightIO(new IO(deferredPromise.resolve)))
               .orElse(err => rightIO(handleError(err)))
               .run();

@@ -109,7 +109,7 @@ export function versionCheckCommand(
     argv => {
       const { config, group, set, app } = argv;
       argv._asyncResult = pipe(
-        opts.logger.verboseLogTaskEither<VersionGuardError, void>(
+        opts.logger.verboseLogTaskEitherL(() =>
           LogMessage.info(`Checking dependencies...`),
         )(),
         chain(() =>

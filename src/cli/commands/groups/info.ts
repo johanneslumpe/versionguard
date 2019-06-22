@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { CrossTableRow } from 'cli-table3';
-import { fromEither, map, chain } from 'fp-ts/lib/TaskEither';
+import { fromEither, map } from 'fp-ts/lib/TaskEither';
 import { pipe } from 'fp-ts/lib/pipeable';
 
 import { ArgvWithGlobalOptions } from '../../types';
@@ -10,6 +10,7 @@ import {
   getCrossTableWithHeaders,
   formatDuration,
   PipeCommandArgs,
+  loggableTaskEither,
 } from '../../utils';
 import { HandlerResult } from '../../HandlerResult';
 import { LogMessage } from '../../LogMessage';
@@ -44,19 +45,15 @@ export function groupInfoCommand(opts: PipeCommandArgs): ArgvWithGlobalOptions {
     argv => {
       const { groupname } = argv;
       argv._asyncResult = pipe(
-        opts.logger.verboseLogTaskEither<VersionGuardError, void>(
-          LogMessage.info(
-            emphasize`Looking up group config for group ${argv.groupname}...`,
-          ),
+        loggableTaskEither<VersionGuardError, void, GroupConfig>(
+          () => fromEither(getGroupConfig(groupname, argv.config.contents)),
+          () =>
+            LogMessage.info(
+              emphasize`Looking up group config for group ${argv.groupname}...`,
+            ),
+          () => LogMessage.info('Group config found!'),
+          opts.logger,
         )(),
-        chain(() =>
-          fromEither(getGroupConfig(groupname, argv.config.contents)),
-        ),
-        chain(
-          opts.logger.verboseLogTaskEither(
-            LogMessage.info('Group config found!'),
-          ),
-        ),
         map(groupConfig => {
           const dependencySetTable = getCrossTableWithHeaders([
             '',

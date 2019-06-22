@@ -1,13 +1,13 @@
-import { fromEither, chain, map } from 'fp-ts/lib/TaskEither';
+import { chain, map } from 'fp-ts/lib/TaskEither';
 import { pipe } from 'fp-ts/lib/pipeable';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
-import { createDependencySetInGroup } from '../../../core/dependencies';
+import { createDependencySetInGroup } from '../../core/dependencies';
 import { HandlerResult } from '../../HandlerResult';
 import { LogMessage } from '../../LogMessage';
-import { PipeCommandArgs, writeConfigWithLog } from '../../utils';
-import { VersionGuardError } from '../../../core/errors';
+import { PipeCommandArgs } from '../../utils';
+import { writeConfig } from '../../core/config';
 
 export function createDependencySetCommand(
   opts: PipeCommandArgs,
@@ -28,24 +28,12 @@ export function createDependencySetCommand(
     argv => {
       const { config, groupname, setname } = argv;
       argv._asyncResult = pipe(
-        opts.logger.verboseLogTaskEither<VersionGuardError, void>(
-          LogMessage.info(
-            emphasize`Attempting to create dependency set ${setname}...`,
-          ),
-        )(),
-        chain(() =>
-          fromEither(
-            createDependencySetInGroup({
-              config: config.contents,
-              groupName: groupname,
-              setName: setname,
-            }),
-          ),
-        ),
-        chain(
-          opts.logger.verboseLogTaskEither(LogMessage.info('Set created!')),
-        ),
-        chain(writeConfigWithLog(argv.config.path, opts.logger)),
+        createDependencySetInGroup({
+          groupName: groupname,
+          setName: setname,
+          logger: opts.logger,
+        })(config.contents),
+        chain(writeConfig(argv.config.path, opts.logger)),
         map(updatedConfig =>
           HandlerResult.create(
             LogMessage.success(

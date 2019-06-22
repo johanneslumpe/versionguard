@@ -11,7 +11,9 @@ type CustomArgumentProperties = Config & {
 };
 export type ArgumentsWithConfig = Arguments<CustomArgumentProperties>;
 type GlobalOptions = {
-  verbose: boolean;
+  verbose?: boolean;
+} & {
+  json?: boolean;
 } & { 'config-path'?: string };
 export type ArgumentsWithConfigAndGlobalOptions = Arguments<
   CustomArgumentProperties & GlobalOptions

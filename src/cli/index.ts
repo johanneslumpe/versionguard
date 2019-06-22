@@ -19,6 +19,7 @@ import { versionCheckCommand } from './commands/versionCheck';
 import { addApplicationCommands } from './commands/applications';
 import { Logger } from './Logger';
 import { LogMessage } from './LogMessage';
+import { jsonStringify } from '../core/utils';
 
 export async function executeCli(
   args: string[],
@@ -30,13 +31,17 @@ export async function executeCli(
     .version('0.1.0')
     .option('verbose', {
       type: 'boolean',
-      default: false,
       description: 'Show verbose output when available',
+    })
+    .option('json', {
+      type: 'boolean',
+      description: 'Output stringified JSON of handler results',
     })
     .option('config-path', {
       type: 'string',
       description: 'Path to config file',
-    }) as ArgvWithGlobalOptions;
+    })
+    .conflicts('verbose', 'json') as ArgvWithGlobalOptions;
 
   const logger = Logger.create();
 
@@ -102,15 +107,18 @@ export async function executeCli(
 
         try {
           const result = await argv;
-          logger.verbose = result.verbose;
+          logger.verbose = !!result.verbose;
           if (result._asyncResult) {
             await pipe(
               result._asyncResult,
               chain(handlerResult =>
                 rightIO(
-                  logger.logL<typeof handlerResult>(result => result.message)(
-                    handlerResult,
-                  ),
+                  logger.logL<typeof handlerResult>(r =>
+                    // TODO use `Either` from stringifing JSON
+                    result.json
+                      ? LogMessage.plain(jsonStringify(r.data))
+                      : r.message,
+                  )(handlerResult),
                 ),
               ),
               chain(() => rightIO(new IO(deferredPromise.resolve))),

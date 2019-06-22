@@ -1,12 +1,21 @@
 import chalk from 'chalk';
 import semver from 'semver';
 import path from 'path';
+import json5 from 'json5';
 import { left, Either, right, tryCatch } from 'fp-ts/lib/Either';
 
 import { VersionGuardConfig } from './config';
 import { GroupConfig } from './groups';
 import { VersionGuardError } from './errors';
 import { DependencySetConfig } from './types';
+
+export function jsonStringify(data: object): string {
+  return json5.stringify(data);
+}
+
+export function jsonParse(data: string): unknown {
+  return json5.parse(data);
+}
 
 function emphasized(str: string): string {
   return chalk.underline.bold(str);

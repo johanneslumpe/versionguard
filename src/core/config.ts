@@ -1,10 +1,9 @@
 import path from 'path';
 import fs from 'fs';
-import json5 from 'json5';
 import findUp from 'find-up';
 import { TaskEither, tryCatch } from 'fp-ts/lib/TaskEither';
 
-import { emphasize } from './utils';
+import { emphasize, jsonStringify, jsonParse } from './utils';
 import { GroupConfig } from './groups/add';
 import { Dictionary } from './types';
 import { VersionGuardError } from './errors';
@@ -28,8 +27,8 @@ export async function readConfig(
 ): Promise<VersionGuardConfig> {
   try {
     const fileContent = await fs.promises.readFile(configPath);
-    const config = json5.parse(fileContent.toString());
-    return config;
+    const config = jsonParse(fileContent.toString());
+    return config as VersionGuardConfig;
   } catch (e) {
     throw new VersionGuardError(
       emphasize`Config file at path "${configPath}" is corrupted. Cannot proceed.`,
@@ -48,7 +47,7 @@ export function writeConfig(
         await fs.promises.writeFile(
           path,
           `${JSON_HEADER}
-      ${json5.stringify(data)}`,
+      ${jsonStringify(data)}`,
         );
         return data;
       },

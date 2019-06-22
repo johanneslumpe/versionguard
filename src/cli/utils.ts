@@ -1,13 +1,11 @@
-import logSymbols = require('log-symbols');
+import logSymbols from 'log-symbols';
 import humanizeDuration from 'humanize-duration';
 import Table, { HorizontalTable, CrossTable } from 'cli-table3';
 import { pipe } from 'fp-ts/lib/pipeable';
 import { TaskEither, chain } from 'fp-ts/lib/TaskEither';
 
 import { ArgvWithGlobalOptions } from './types';
-import { VersionGuardError, VersionGuardErrorCode } from '../core/errors';
 import { Logger } from './Logger';
-import { writeConfig, VersionGuardConfig } from '../core';
 import { LogMessage } from './LogMessage';
 export interface PipeCommandArgs {
   cli: ArgvWithGlobalOptions;
@@ -22,13 +20,6 @@ export function pipeCommands(
   const [head, ...tail] = fns;
   return (opts: PipeCommandArgs) =>
     tail.reduce((acc, fn) => fn({ ...opts, cli: acc }), head(opts));
-}
-
-export function isVersionGuardErrorType(
-  error: Error | VersionGuardError,
-  code: VersionGuardErrorCode,
-): boolean {
-  return error instanceof VersionGuardError && error.errorCode === code;
 }
 
 interface Deferred<T> {
@@ -83,20 +74,23 @@ export function formatDuration(duration: number): string {
   });
 }
 
-export function writeConfigWithLog(
-  path: string,
+/**
+ * Wraps a function returning a `TaskEither` in a logging block
+ * @param f A function that returns a `TaskEither`
+ * @param onBefore Function returning the log message to show prior to executing task returned by `f`
+ * @param onAfter  Function returning the log message to show after executing task returned by `f`
+ * @param logger Logger instance to use for logging
+ */
+export function loggableTaskEither<L = never, A = never, B = never>(
+  f: (a: A) => TaskEither<L, B>,
+  onBefore: (a: A) => LogMessage,
+  onAfter: (a: B) => LogMessage,
   logger: Logger,
-): (
-  data: VersionGuardConfig,
-) => TaskEither<VersionGuardError, VersionGuardConfig> {
+): (data: A) => TaskEither<L, B> {
   return data =>
     pipe(
-      logger.verboseLogTaskEitherL<VersionGuardError, VersionGuardConfig>(() =>
-        LogMessage.info('Writing config...'),
-      )(data),
-      chain(() => writeConfig(path)(data)),
-      chain(
-        logger.verboseLogTaskEitherL(() => LogMessage.info('Config written!')),
-      ),
+      logger.verboseLogTaskEitherL(onBefore)(data),
+      chain(f),
+      chain(logger.verboseLogTaskEitherL(onAfter)),
     );
 }

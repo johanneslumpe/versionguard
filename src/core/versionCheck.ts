@@ -36,7 +36,7 @@ export interface ApplicationResult {
   dependencyResults: DependencyResult[];
 }
 
-interface CheckResult {
+export interface CheckResult {
   result: CheckResultType;
   groupResults: Dictionary<GroupCheckResult>;
 }

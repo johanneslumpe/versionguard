@@ -1,13 +1,13 @@
-import { fromEither, chain, map } from 'fp-ts/lib/TaskEither';
+import { chain, map } from 'fp-ts/lib/TaskEither';
 import { pipe } from 'fp-ts/lib/pipeable';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
 import { HandlerResult } from '../../HandlerResult';
 import { LogMessage } from '../../LogMessage';
-import { setGracePeriod } from '../../../core/dependencies/setGracePeriod';
-import { PipeCommandArgs, writeConfigWithLog } from '../../utils';
-import { VersionGuardError } from '../../../core/errors';
+import { setGracePeriod } from '../../core/dependencies';
+import { PipeCommandArgs } from '../../utils';
+import { writeConfig } from '../../core/config';
 
 export function setGracePeriodCommand(
   opts: PipeCommandArgs,
@@ -33,27 +33,13 @@ export function setGracePeriodCommand(
     argv => {
       const { config, groupname, setname, graceperiod } = argv;
       argv._asyncResult = pipe(
-        opts.logger.verboseLogTaskEither<VersionGuardError, void>(
-          LogMessage.info(
-            emphasize`Attempting to set grace period for set ${setname} within group ${groupname}...`,
-          ),
-        )(),
-        chain(() =>
-          fromEither(
-            setGracePeriod({
-              config: config.contents,
-              groupName: groupname,
-              setName: setname,
-              gracePeriod: graceperiod,
-            }),
-          ),
-        ),
-        chain(
-          opts.logger.verboseLogTaskEither(
-            LogMessage.info('Grace period updated!'),
-          ),
-        ),
-        chain(writeConfigWithLog(config.path, opts.logger)),
+        setGracePeriod({
+          groupName: groupname,
+          setName: setname,
+          gracePeriod: graceperiod,
+          logger: opts.logger,
+        })(config.contents),
+        chain(writeConfig(config.path, opts.logger)),
         map(updatedConfig =>
           HandlerResult.create(
             LogMessage.success(

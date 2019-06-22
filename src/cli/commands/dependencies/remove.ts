@@ -1,13 +1,13 @@
-import { fromEither, chain, map } from 'fp-ts/lib/TaskEither';
+import { chain, map } from 'fp-ts/lib/TaskEither';
 import { pipe } from 'fp-ts/lib/pipeable';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
-import { removeDependency } from '../../../core/dependencies/remove';
+import { removeDependency } from '../../core/dependencies';
 import { HandlerResult } from '../../HandlerResult';
 import { LogMessage } from '../../LogMessage';
-import { PipeCommandArgs, writeConfigWithLog } from '../../utils';
-import { VersionGuardError } from '../../../core/errors';
+import { PipeCommandArgs } from '../../utils';
+import { writeConfig } from '../../core/config';
 
 export function removeDependencyCommand(
   opts: PipeCommandArgs,
@@ -32,27 +32,13 @@ export function removeDependencyCommand(
     argv => {
       const { config, groupname, setname, dependency } = argv;
       argv._asyncResult = pipe(
-        opts.logger.verboseLogTaskEither<VersionGuardError, void>(
-          LogMessage.info(
-            emphasize`Attempting to remove dependency ${dependency} from set ${setname} within group ${groupname}...`,
-          ),
-        )(),
-        chain(() =>
-          fromEither(
-            removeDependency({
-              config: config.contents,
-              dependency,
-              groupName: groupname,
-              setName: setname,
-            }),
-          ),
-        ),
-        chain(
-          opts.logger.verboseLogTaskEither(
-            LogMessage.info('Dependency removed!'),
-          ),
-        ),
-        chain(writeConfigWithLog(argv.config.path, opts.logger)),
+        removeDependency({
+          dependency,
+          groupName: groupname,
+          setName: setname,
+          logger: opts.logger,
+        })(config.contents),
+        chain(writeConfig(argv.config.path, opts.logger)),
         map(updatedConfig =>
           HandlerResult.create(
             LogMessage.success(

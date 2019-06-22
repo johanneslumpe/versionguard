@@ -21,7 +21,7 @@ export class HandlerResult {
     return this._data;
   }
 
-  public get message(): string {
-    return this._message.formattedMessage;
+  public get message(): LogMessage {
+    return this._message;
   }
 }

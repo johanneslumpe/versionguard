@@ -3,15 +3,16 @@ import { pipe } from 'fp-ts/lib/pipeable';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
-import { writeConfig } from '../../../core/config';
 import { createDependencySetInGroup } from '../../../core/dependencies';
 import { HandlerResult } from '../../HandlerResult';
 import { LogMessage } from '../../LogMessage';
+import { PipeCommandArgs, writeConfigWithLog } from '../../utils';
+import { VersionGuardError } from '../../../core/errors';
 
 export function createDependencySetCommand(
-  yargs: ArgvWithGlobalOptions,
+  opts: PipeCommandArgs,
 ): ArgvWithGlobalOptions {
-  return yargs.command(
+  return opts.cli.command(
     'dependencies:create-set <groupname> <setname>',
     'create dependency set within group',
     yargs =>
@@ -27,17 +28,27 @@ export function createDependencySetCommand(
     argv => {
       const { config, groupname, setname } = argv;
       argv._asyncResult = pipe(
-        fromEither(
-          createDependencySetInGroup({
-            config: config.contents,
-            groupName: groupname,
-            setName: setname,
-          }),
+        opts.logger.verboseLogTaskEither<VersionGuardError, void>(
+          LogMessage.info(
+            emphasize`Attempting to create dependency set ${setname}...`,
+          ),
+        )(),
+        chain(() =>
+          fromEither(
+            createDependencySetInGroup({
+              config: config.contents,
+              groupName: groupname,
+              setName: setname,
+            }),
+          ),
         ),
-        chain(writeConfig(config.path)),
+        chain(
+          opts.logger.verboseLogTaskEither(LogMessage.info('Set created!')),
+        ),
+        chain(writeConfigWithLog(argv.config.path, opts.logger)),
         map(updatedConfig =>
           HandlerResult.create(
-            LogMessage.create(
+            LogMessage.success(
               emphasize`Dependency set ${setname} created within group ${groupname}`,
             ),
             updatedConfig,

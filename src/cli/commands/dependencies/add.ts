@@ -5,12 +5,13 @@ import inquirer from 'inquirer';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
-import { writeConfig, VersionGuardConfig } from '../../../core/config';
+import { VersionGuardConfig } from '../../../core/config';
 import { addDependency, AddDependencyResult } from '../../../core/dependencies';
 import { VersionGuardError } from '../../../core/errors';
 import { HandlerResult } from '../../HandlerResult';
 import { LogMessage } from '../../LogMessage';
 import { AddDependencyChangeType } from '../../../core/dependencies/utils/getGroupConfigWithCleanedDependencySetsAndChangeType';
+import { PipeCommandArgs, writeConfigWithLog } from '../../utils';
 
 function handleExistingDependency({
   error,
@@ -86,9 +87,9 @@ function getMessageForChangeType({
 }
 
 export function addDependencyCommand(
-  yargs: ArgvWithGlobalOptions,
+  opts: PipeCommandArgs,
 ): ArgvWithGlobalOptions {
-  return yargs.command(
+  return opts.cli.command(
     'dependencies:add <groupname> <setname> <dependency>',
     'add dependency to set within group',
     yargs =>
@@ -108,13 +109,25 @@ export function addDependencyCommand(
     argv => {
       const { config, groupname, setname, dependency } = argv;
       argv._asyncResult = pipe(
-        fromEither(
-          addDependency({
-            config: config.contents,
-            dependency,
-            groupName: groupname,
-            setName: setname,
-          }),
+        opts.logger.verboseLogTaskEither<VersionGuardError, void>(
+          LogMessage.info(
+            emphasize`Attempting to add dependency ${dependency}...`,
+          ),
+        )(),
+        chain(() =>
+          fromEither(
+            addDependency({
+              config: config.contents,
+              dependency,
+              groupName: groupname,
+              setName: setname,
+            }),
+          ),
+        ),
+        chain(
+          opts.logger.verboseLogTaskEither(
+            LogMessage.info('Dependency added!'),
+          ),
         ),
         orElse(err => {
           if (
@@ -140,10 +153,10 @@ export function addDependencyCommand(
         }),
         chain(result =>
           pipe(
-            writeConfig(config.path)(result.updatedConfig),
+            writeConfigWithLog(config.path, opts.logger)(result.updatedConfig),
             map(updatedConfig =>
               HandlerResult.create(
-                LogMessage.create(
+                LogMessage.success(
                   getMessageForChangeType({
                     changeType: result.changeType,
                     dependency,

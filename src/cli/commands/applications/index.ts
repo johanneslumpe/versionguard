@@ -1,10 +1,10 @@
 import { ArgvWithGlobalOptions } from '../../types';
-import { pipeCommands } from '../../utils';
+import { pipeCommands, PipeCommandArgs } from '../../utils';
 import { addApplicationCommand } from './add';
 import { removeApplicationCommand } from './remove';
 
 export function addApplicationCommands(
-  yargs: ArgvWithGlobalOptions,
+  opts: PipeCommandArgs,
 ): ArgvWithGlobalOptions {
-  return pipeCommands(addApplicationCommand, removeApplicationCommand)(yargs);
+  return pipeCommands(addApplicationCommand, removeApplicationCommand)(opts);
 }

@@ -3,15 +3,16 @@ import { pipe } from 'fp-ts/lib/pipeable';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
-import { writeConfig } from '../../../core/config';
 import { deleteDependencySetFromGroup } from '../../../core/dependencies';
 import { HandlerResult } from '../../HandlerResult';
 import { LogMessage } from '../../LogMessage';
+import { PipeCommandArgs, writeConfigWithLog } from '../../utils';
+import { VersionGuardError } from '../../../core/errors';
 
 export function deleteDependencySetCommand(
-  yargs: ArgvWithGlobalOptions,
+  opts: PipeCommandArgs,
 ): ArgvWithGlobalOptions {
-  return yargs.command(
+  return opts.cli.command(
     'dependencies:delete-set <groupname> <setname>',
     'delete dependency set from group',
     yargs =>
@@ -27,17 +28,27 @@ export function deleteDependencySetCommand(
     argv => {
       const { config, groupname, setname } = argv;
       argv._asyncResult = pipe(
-        fromEither(
-          deleteDependencySetFromGroup({
-            config: config.contents,
-            groupName: groupname,
-            setName: setname,
-          }),
+        opts.logger.verboseLogTaskEither<VersionGuardError, void>(
+          LogMessage.info(
+            emphasize`Attempting to delete dependency set ${setname} from group ${groupname}...`,
+          ),
+        )(),
+        chain(() =>
+          fromEither(
+            deleteDependencySetFromGroup({
+              config: config.contents,
+              groupName: groupname,
+              setName: setname,
+            }),
+          ),
         ),
-        chain(writeConfig(config.path)),
+        chain(
+          opts.logger.verboseLogTaskEither(LogMessage.info('Set deleted!')),
+        ),
+        chain(writeConfigWithLog(argv.config.path, opts.logger)),
         map(updatedConfig =>
           HandlerResult.create(
-            LogMessage.create(
+            LogMessage.success(
               emphasize`Dependency set ${setname} deleted from group ${groupname}`,
             ),
             updatedConfig,

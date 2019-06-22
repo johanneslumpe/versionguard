@@ -95,7 +95,7 @@ In case you'd like to give yourself and others a bit of leeway until when a depe
 Apart from the core commands listed above, versionguard also provides some options:
 
 ### `--verbose`
-If you want verbose output, use this flag. Right now only `check` supports verbose mode.
+If you want verbose output, use this flag.
 
 ### `--config-path`
 By default, versionguard will search for a config file from the current working directory upwards. If it cannot find a config it will conveniently create one for you. In case you want to reference a config file that is not within a directory in the tree above your working directory, you can use this flag to pass a config file path.

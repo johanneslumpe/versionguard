@@ -30,17 +30,35 @@ type MessageType = ObjectValues<typeof messageTypes>;
 
 export class LogMessage {
   private _message: string;
-  private _type: MessageType;
-  public constructor(message: string, type: MessageType) {
+  private _type?: MessageType;
+  public constructor(message: string, type?: MessageType) {
     this._message = message;
     this._type = type;
   }
-  public static create(
-    message: string,
-    type: MessageType = 'success',
-  ): LogMessage {
+  public static create(message: string, type?: MessageType): LogMessage {
     return new LogMessage(message, type);
   }
+
+  public static plain(message: string): LogMessage {
+    return LogMessage.create(message);
+  }
+
+  public static info(message: string): LogMessage {
+    return LogMessage.create(message, 'info');
+  }
+
+  public static error(message: string): LogMessage {
+    return LogMessage.create(message, 'error');
+  }
+
+  public static success(message: string): LogMessage {
+    return LogMessage.create(message, 'success');
+  }
+
+  public static warning(message: string): LogMessage {
+    return LogMessage.create(message, 'warning');
+  }
+
   public get message(): string {
     return this._message;
   }
@@ -54,6 +72,8 @@ export class LogMessage {
         return warning(this._message);
       case 'error':
         return error(this._message);
+      default:
+        return this._message;
     }
   }
 }

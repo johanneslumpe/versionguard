@@ -17,6 +17,7 @@ import {
   getHorizontalTableWithHeaders,
   getLogSymbolForStatus,
   formatDuration,
+  PipeCommandArgs,
 } from '../utils';
 import { Dictionary } from '../../core/types';
 import { emphasize } from '../../core/utils';
@@ -79,9 +80,9 @@ function createApplicationResultRows(
 }
 
 export function versionCheckCommand(
-  yargs: ArgvWithGlobalOptions,
+  opts: PipeCommandArgs,
 ): ArgvWithGlobalOptions {
-  return yargs.command(
+  return opts.cli.command(
     'check',
     'check dependencies for given groups',
     yargs =>
@@ -106,18 +107,22 @@ export function versionCheckCommand(
         },
       }),
     argv => {
-      const { config, verbose, group, set, app } = argv;
+      const { config, group, set, app } = argv;
       argv._asyncResult = pipe(
-        checkDependencies({
-          config: config.contents,
-          configPath: config.path,
-          groups: group,
-          sets: set,
-          applications: app,
-        }),
-        chain(result => {
-          let verboseResult = '';
-          if (verbose) {
+        opts.logger.verboseLogTaskEither<VersionGuardError, void>(
+          LogMessage.info(`Checking dependencies...`),
+        )(),
+        chain(() =>
+          checkDependencies({
+            config: config.contents,
+            configPath: config.path,
+            groups: group,
+            sets: set,
+            applications: app,
+          }),
+        ),
+        chain(
+          opts.logger.verboseLogTaskEitherL(result => {
             const tables = Object.entries(result.groupResults).reduce(
               (acc, [, groupResult]) => {
                 const resultTable = getHorizontalTableWithHeaders([
@@ -136,9 +141,12 @@ export function versionCheckCommand(
               },
               [] as HorizontalTable[],
             );
-            verboseResult = `\n${tables.map(t => t.toString()).join('\n')}\n`;
-          }
-
+            return LogMessage.plain(
+              `${tables.map(t => t.toString()).join('\n')}`,
+            );
+          }),
+        ),
+        chain(result => {
           // TODO refactor this to be less imperative
           return tryCatch(
             async () => {
@@ -148,7 +156,7 @@ export function versionCheckCommand(
                   .filter(([, groupResult]) => groupResult.result === 'FAIL')
                   .map(([group]) => group);
                 throw VersionGuardError.from(
-                  `${verboseResult}${pluralize(
+                  `${pluralize(
                     'Group',
                     failedGroups.length,
                   )} ${emphasize`${failedGroups.join(
@@ -159,11 +167,8 @@ export function versionCheckCommand(
 
               return HandlerResult.create(
                 result.result === 'PASS'
-                  ? LogMessage.create(`${verboseResult}Check passed!`)
-                  : LogMessage.create(
-                      `${verboseResult}Check tentatively passed!`,
-                      'warning',
-                    ),
+                  ? LogMessage.success(`Check passed!`)
+                  : LogMessage.warning(`Check tentatively passed!`),
                 result,
               );
             },

@@ -9,8 +9,12 @@ type CustomArgumentProperties = Unbox<ReturnType<typeof configMiddleware>> & {
   _asyncResult?: TaskEither<VersionGuardError, HandlerResult>;
 };
 export type ArgumentsWithConfig = Arguments<CustomArgumentProperties>;
+type GlobalOptions = {
+  verbose: boolean;
+} & { 'config-path'?: string };
+export type ArgumentsWithConfigAndGlobalOptions = Arguments<
+  CustomArgumentProperties & GlobalOptions
+>;
 export type ArgvWithGlobalOptions = Argv<
-  CustomArgumentProperties & {
-    verbose: boolean;
-  } & { 'config-path'?: string }
+  CustomArgumentProperties & GlobalOptions
 >;

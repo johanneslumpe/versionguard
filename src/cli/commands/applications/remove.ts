@@ -4,15 +4,16 @@ import { chain, map } from 'fp-ts/lib/TaskEither';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
-import { writeConfig } from '../../../core/config';
 import { removeApplication } from '../../../core/applications';
 import { HandlerResult } from '../../HandlerResult';
 import { LogMessage } from '../../LogMessage';
+import { PipeCommandArgs, writeConfigWithLog } from '../../utils';
+import { VersionGuardError } from '../../../core/errors';
 
 export function removeApplicationCommand(
-  yargs: ArgvWithGlobalOptions,
+  opts: PipeCommandArgs,
 ): ArgvWithGlobalOptions {
-  return yargs.command(
+  return opts.cli.command(
     'applications:remove <groupname> <applicationpaths..>',
     'remove application from group',
     yargs =>
@@ -29,26 +30,34 @@ export function removeApplicationCommand(
         .array('applicationpaths'),
     argv => {
       const { config, groupname, applicationpaths } = argv;
+      const applicationStr = pluralize('Application', applicationpaths.length);
+      const pathStr = pluralize('path', applicationpaths.length);
+      const applicationPaths = applicationpaths.join(', ');
+
       argv._asyncResult = pipe(
-        removeApplication({
-          config: config.contents,
-          configPath: config.path,
-          groupName: groupname,
-          relativePaths: applicationpaths,
-        }),
-        chain(writeConfig(config.path)),
+        opts.logger.verboseLogTaskEither<VersionGuardError, void>(
+          LogMessage.info(
+            emphasize`Attempting to remove ${applicationStr} in ${pathStr} ${applicationPaths}...`,
+          ),
+        )(),
+        chain(() =>
+          removeApplication({
+            config: config.contents,
+            configPath: config.path,
+            groupName: groupname,
+            relativePaths: applicationpaths,
+          }),
+        ),
+        chain(
+          opts.logger.verboseLogTaskEither(
+            LogMessage.info('Application removed!'),
+          ),
+        ),
+        chain(writeConfigWithLog(argv.config.path, opts.logger)),
         map(updatedConfig =>
           HandlerResult.create(
-            LogMessage.create(
-              emphasize`${pluralize(
-                'Application',
-                applicationpaths.length,
-              )} in ${pluralize(
-                'path',
-                applicationpaths.length,
-              )} ${applicationpaths.join(
-                ', ',
-              )} removed from group ${groupname}`,
+            LogMessage.success(
+              emphasize`${applicationStr} in ${pathStr} ${applicationPaths} removed from group ${groupname}`,
             ),
             updatedConfig,
           ),

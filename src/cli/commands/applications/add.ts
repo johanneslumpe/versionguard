@@ -6,13 +6,14 @@ import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
 import { addApplications } from '../../../core/applications';
 import { HandlerResult } from '../../HandlerResult';
-import { writeConfig } from '../../../core';
 import { LogMessage } from '../../LogMessage';
+import { PipeCommandArgs, writeConfigWithLog } from '../../utils';
+import { VersionGuardError } from '../../../core/errors';
 
 export function addApplicationCommand(
-  yargs: ArgvWithGlobalOptions,
+  opts: PipeCommandArgs,
 ): ArgvWithGlobalOptions {
-  return yargs.command(
+  return opts.cli.command(
     'applications:add <groupname> <applicationpaths..>',
     'add application to group',
     yargs =>
@@ -29,26 +30,33 @@ export function addApplicationCommand(
         .string('applicationpaths'),
     argv => {
       const { config, groupname, applicationpaths } = argv;
+      const applicationStr = pluralize('Application', applicationpaths.length);
+      const applicationPaths = applicationpaths.join(', ');
+      const pathStr = pluralize('path', applicationpaths.length);
       argv._asyncResult = pipe(
-        addApplications({
-          config: config.contents,
-          groupName: groupname,
-          configPath: argv.config.path,
-          relativePaths: applicationpaths,
-        }),
-        chain(writeConfig(argv.config.path)),
+        opts.logger.verboseLogTaskEither<VersionGuardError, void>(
+          LogMessage.info(
+            emphasize`Attempting to add ${applicationStr} in ${pathStr} ${applicationPaths}...`,
+          ),
+        )(),
+        chain(() =>
+          addApplications({
+            config: config.contents,
+            groupName: groupname,
+            configPath: argv.config.path,
+            relativePaths: applicationpaths,
+          }),
+        ),
+        chain(
+          opts.logger.verboseLogTaskEither(
+            LogMessage.info('Application added!'),
+          ),
+        ),
+        chain(writeConfigWithLog(argv.config.path, opts.logger)),
         map(updatedConfig =>
           HandlerResult.create(
-            LogMessage.create(
-              `${pluralize(
-                'Application',
-                applicationpaths.length,
-              )} in ${pluralize(
-                'path',
-                applicationpaths.length,
-              )} ${emphasize`${applicationpaths.join(
-                ', ',
-              )}`} added to group ${groupname}`,
+            LogMessage.success(
+              `${applicationStr} in ${pathStr} ${emphasize`${applicationPaths}`} added to group ${groupname}`,
             ),
             updatedConfig,
           ),

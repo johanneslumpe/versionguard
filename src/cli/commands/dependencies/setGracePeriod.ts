@@ -1,4 +1,5 @@
-import { fromEither } from 'fp-ts/lib/TaskEither';
+import { fromEither, chain, map } from 'fp-ts/lib/TaskEither';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
@@ -30,23 +31,25 @@ export function setGracePeriodCommand(
         .string('graceperiod'),
     argv => {
       const { config, groupname, setname, graceperiod } = argv;
-      argv._asyncResult = fromEither(
-        setGracePeriod({
-          config: config.contents,
-          groupName: groupname,
-          setName: setname,
-          gracePeriod: graceperiod,
-        }),
-      )
-        .chain(writeConfig(config.path))
-        .map(updatedConfig =>
+      argv._asyncResult = pipe(
+        fromEither(
+          setGracePeriod({
+            config: config.contents,
+            groupName: groupname,
+            setName: setname,
+            gracePeriod: graceperiod,
+          }),
+        ),
+        chain(writeConfig(config.path)),
+        map(updatedConfig =>
           HandlerResult.create(
             LogMessage.create(
               emphasize`Grace period for dependency set ${setname} updated`,
             ),
             updatedConfig,
           ),
-        );
+        ),
+      );
     },
   );
 }

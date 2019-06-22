@@ -1,4 +1,5 @@
-import { TaskEither, fromEither } from 'fp-ts/lib/TaskEither';
+import { TaskEither, fromEither, taskEither } from 'fp-ts/lib/TaskEither';
+import { Do } from 'fp-ts-contrib/lib/Do';
 
 import { getGroupConfig, normalizePaths } from '../utils';
 import { VersionGuardConfig } from '../config';
@@ -36,19 +37,22 @@ export function removeApplication({
   VersionGuardError,
   VersionGuardConfig
 > {
-  return fromEither(getGroupConfig(groupName, config)).chain(groupConfig =>
-    fromEither(
-      ensureApplicationsExist(normalizePaths({ configPath, relativePaths }))(
-        groupConfig,
+  return Do(taskEither)
+    .bind('groupConfig', fromEither(getGroupConfig(groupName, config)))
+    .bindL('paths', context =>
+      fromEither(
+        ensureApplicationsExist(normalizePaths({ configPath, relativePaths }))(
+          context.groupConfig,
+        ),
       ),
-    ).map(paths => ({
+    )
+    .return(context => ({
       ...config,
       [groupName]: {
-        ...groupConfig,
-        applications: groupConfig.applications.filter(
-          application => !paths.includes(application.path),
+        ...context.groupConfig,
+        applications: context.groupConfig.applications.filter(
+          application => !context.paths.includes(application.path),
         ),
       },
-    })),
-  );
+    }));
 }

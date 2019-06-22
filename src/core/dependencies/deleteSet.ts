@@ -1,4 +1,5 @@
-import { Either } from 'fp-ts/lib/Either';
+import { Either, chain, map } from 'fp-ts/lib/Either';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 import { getGroupConfig } from '../utils';
 import { VersionGuardConfig } from '../config';
@@ -27,9 +28,10 @@ export function deleteDependencySetFromGroup({
   groupName,
   config,
 }: DeleteSetOptions): Either<VersionGuardError, VersionGuardConfig> {
-  return getGroupConfig(groupName, config)
-    .chain(ensureSetExists(setName))
-    .map(groupConfig => {
+  return pipe(
+    getGroupConfig(groupName, config),
+    chain(ensureSetExists(setName)),
+    map(groupConfig => {
       const clonedDependencies = { ...groupConfig.dependencies };
       delete clonedDependencies[setName];
       return {
@@ -39,5 +41,6 @@ export function deleteDependencySetFromGroup({
           dependencies: clonedDependencies,
         },
       };
-    });
+    }),
+  );
 }

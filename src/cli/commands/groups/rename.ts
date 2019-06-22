@@ -1,4 +1,5 @@
-import { fromEither } from 'fp-ts/lib/TaskEither';
+import { fromEither, chain, map } from 'fp-ts/lib/TaskEither';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { renameGroup } from '../../../core/groups';
@@ -25,18 +26,18 @@ export function renameGroupCommand(
         .string('newname'),
     argv => {
       const { oldname, newname } = argv;
-      argv._asyncResult = fromEither(
-        renameGroup(oldname, newname, argv.config.contents),
-      )
-        .chain(writeConfig(argv.config.path))
-        .map(config =>
+      argv._asyncResult = pipe(
+        fromEither(renameGroup(oldname, newname, argv.config.contents)),
+        chain(writeConfig(argv.config.path)),
+        map(config =>
           HandlerResult.create(
             LogMessage.create(
               emphasize`Group ${oldname} renamed to ${newname}!`,
             ),
             config,
           ),
-        );
+        ),
+      );
     },
   );
 }

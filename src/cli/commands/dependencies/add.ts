@@ -1,10 +1,13 @@
+import { tryCatch, fromEither, TaskEither, map } from 'fp-ts/lib/TaskEither';
+import { pipe } from 'fp-ts/lib/pipeable';
+import { chain, orElse } from 'fp-ts/lib/TaskEither';
+import inquirer from 'inquirer';
+
 import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
 import { writeConfig, VersionGuardConfig } from '../../../core/config';
 import { addDependency, AddDependencyResult } from '../../../core/dependencies';
 import { VersionGuardError } from '../../../core/errors';
-import inquirer from 'inquirer';
-import { tryCatch, fromEither, TaskEither } from 'fp-ts/lib/TaskEither';
 import { HandlerResult } from '../../HandlerResult';
 import { LogMessage } from '../../LogMessage';
 import { AddDependencyChangeType } from '../../../core/dependencies/utils/getGroupConfigWithCleanedDependencySetsAndChangeType';
@@ -22,38 +25,41 @@ function handleExistingDependency({
   groupName: string;
   setName: string;
 }): TaskEither<VersionGuardError, AddDependencyResult> {
-  return tryCatch(
-    async () => {
-      const { shouldMigrate } = await inquirer.prompt<{
-        shouldMigrate: boolean;
-      }>([
-        {
-          name: 'shouldMigrate',
-          type: 'confirm',
-          message: `${error.message}\nWould you like to migrate the dependency?`,
-          default: true,
-        },
-      ]);
+  return pipe(
+    tryCatch(
+      async () => {
+        const { shouldMigrate } = await inquirer.prompt<{
+          shouldMigrate: boolean;
+        }>([
+          {
+            name: 'shouldMigrate',
+            type: 'confirm',
+            message: `${error.message}\nWould you like to migrate the dependency?`,
+            default: true,
+          },
+        ]);
 
-      if (shouldMigrate) {
-        return shouldMigrate;
-      } else {
-        throw new Error('aborted');
-      }
-    },
-    () =>
-      VersionGuardError.from(
-        emphasize`Adding of dependency ${dependency} aborted`,
+        if (shouldMigrate) {
+          return shouldMigrate;
+        } else {
+          throw new Error('aborted');
+        }
+      },
+      () =>
+        VersionGuardError.from(
+          emphasize`Adding of dependency ${dependency} aborted`,
+        ),
+    ),
+    chain(() =>
+      fromEither(
+        addDependency({
+          config,
+          dependency,
+          groupName,
+          setName,
+          migrateDependency: true,
+        }),
       ),
-  ).chain(() =>
-    fromEither(
-      addDependency({
-        config,
-        dependency,
-        groupName,
-        setName,
-        migrateDependency: true,
-      }),
     ),
   );
 }
@@ -101,15 +107,16 @@ export function addDependencyCommand(
         .string('dependency'),
     argv => {
       const { config, groupname, setname, dependency } = argv;
-      argv._asyncResult = fromEither(
-        addDependency({
-          config: config.contents,
-          dependency,
-          groupName: groupname,
-          setName: setname,
-        }),
-      )
-        .orElse(err => {
+      argv._asyncResult = pipe(
+        fromEither(
+          addDependency({
+            config: config.contents,
+            dependency,
+            groupName: groupname,
+            setName: setname,
+          }),
+        ),
+        orElse(err => {
           if (
             err.errorCode ===
             VersionGuardError.codes.DEPENDENCY_EXISTS_IN_SIBLING_SET
@@ -130,22 +137,26 @@ export function addDependencyCommand(
               err => err as VersionGuardError,
             );
           }
-        })
-        .chain(result =>
-          writeConfig(config.path)(result.updatedConfig).map(updatedConfig =>
-            HandlerResult.create(
-              LogMessage.create(
-                getMessageForChangeType({
-                  changeType: result.changeType,
-                  dependency,
-                  setName: setname,
-                  groupName: groupname,
-                }),
+        }),
+        chain(result =>
+          pipe(
+            writeConfig(config.path)(result.updatedConfig),
+            map(updatedConfig =>
+              HandlerResult.create(
+                LogMessage.create(
+                  getMessageForChangeType({
+                    changeType: result.changeType,
+                    dependency,
+                    setName: setname,
+                    groupName: groupname,
+                  }),
+                ),
+                updatedConfig,
               ),
-              updatedConfig,
             ),
           ),
-        );
+        ),
+      );
     },
   );
 }

@@ -1,4 +1,5 @@
-import { Either } from 'fp-ts/lib/Either';
+import { Either, either } from 'fp-ts/lib/Either';
+import { Do } from 'fp-ts-contrib/lib/Do';
 
 import { getGroupConfig } from '../utils';
 import { VersionGuardConfig } from '../config';
@@ -36,18 +37,21 @@ export function removeDependency({
   config,
 }: RemoveDependencyOptions): Either<VersionGuardError, VersionGuardConfig> {
   const [dependencyName] = dependency.split('@');
-  return getGroupConfig(groupName, config).chain(groupConfig =>
-    ensureDependencyExistsInSet({
-      setName,
-      dependencyName,
-      dependencySetConfig: groupConfig.dependencies[setName],
-    }).map(setsContainingDependency => ({
+  return Do(either)
+    .bind('groupConfig', getGroupConfig(groupName, config))
+    .bindL('setsContainingDependency', ({ groupConfig }) =>
+      ensureDependencyExistsInSet({
+        setName,
+        dependencyName,
+        dependencySetConfig: groupConfig.dependencies[setName],
+      }),
+    )
+    .return(({ groupConfig, setsContainingDependency }) => ({
       ...config,
       [groupName]: filterDependenciesFromSets({
         dependencyName,
         groupConfig,
         setsContainingDependency,
       }),
-    })),
-  );
+    }));
 }

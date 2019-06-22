@@ -1,4 +1,5 @@
-import { fromEither } from 'fp-ts/lib/TaskEither';
+import { fromEither, chain, map } from 'fp-ts/lib/TaskEither';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
@@ -29,23 +30,25 @@ export function removeDependencyCommand(
         .string('dependency'),
     argv => {
       const { config, groupname, setname, dependency } = argv;
-      argv._asyncResult = fromEither(
-        removeDependency({
-          config: config.contents,
-          dependency,
-          groupName: groupname,
-          setName: setname,
-        }),
-      )
-        .chain(writeConfig(config.path))
-        .map(updatedConfig =>
+      argv._asyncResult = pipe(
+        fromEither(
+          removeDependency({
+            config: config.contents,
+            dependency,
+            groupName: groupname,
+            setName: setname,
+          }),
+        ),
+        chain(writeConfig(config.path)),
+        map(updatedConfig =>
           HandlerResult.create(
             LogMessage.create(
               emphasize`Dependency ${dependency} successfully removed from set ${setname} within group ${groupname}`,
             ),
             updatedConfig,
           ),
-        );
+        ),
+      );
     },
   );
 }

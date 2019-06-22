@@ -1,4 +1,5 @@
-import { fromEither } from 'fp-ts/lib/TaskEither';
+import { fromEither, map } from 'fp-ts/lib/TaskEither';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { getGroupList } from '../../../core/groups';
@@ -14,8 +15,9 @@ export function listGroupsCommand(
     'show list of all registered groups',
     yargs => yargs,
     argv => {
-      argv._asyncResult = fromEither(
-        getGroupList(argv.config.contents).map(groups => {
+      argv._asyncResult = pipe(
+        fromEither(getGroupList(argv.config.contents)),
+        map(groups => {
           return HandlerResult.create(
             LogMessage.create(
               groups.length

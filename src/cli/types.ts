@@ -5,7 +5,8 @@ import { TaskEither } from 'fp-ts/lib/TaskEither';
 import { VersionGuardError } from '../core/errors';
 
 export type Unbox<T> = T extends Promise<infer R> ? R : T;
-type CustomArgumentProperties = Unbox<ReturnType<typeof configMiddleware>> & {
+export type Config = Unbox<ReturnType<typeof configMiddleware>>;
+type CustomArgumentProperties = Config & {
   _asyncResult?: TaskEither<VersionGuardError, HandlerResult>;
 };
 export type ArgumentsWithConfig = Arguments<CustomArgumentProperties>;

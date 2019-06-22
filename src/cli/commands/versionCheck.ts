@@ -2,6 +2,8 @@ import { HorizontalTable, HorizontalTableRow } from 'cli-table3';
 import chalk from 'chalk';
 import pluralize from 'pluralize';
 import logSymbols = require('log-symbols');
+import { pipe } from 'fp-ts/lib/pipeable';
+import { tryCatch, chain } from 'fp-ts/lib/TaskEither';
 
 import { ArgvWithGlobalOptions } from '../types';
 import {
@@ -18,7 +20,6 @@ import {
 } from '../utils';
 import { Dictionary } from '../../core/types';
 import { emphasize } from '../../core/utils';
-import { tryCatch } from 'fp-ts/lib/TaskEither';
 import { HandlerResult } from '../HandlerResult';
 import { LogMessage } from '../LogMessage';
 
@@ -106,65 +107,70 @@ export function versionCheckCommand(
       }),
     argv => {
       const { config, verbose, group, set, app } = argv;
-      argv._asyncResult = checkDependencies({
-        config: config.contents,
-        configPath: config.path,
-        groups: group,
-        sets: set,
-        applications: app,
-      }).chain(result => {
-        let verboseResult = '';
-        if (verbose) {
-          const tables = Object.entries(result.groupResults).reduce(
-            (acc, [, groupResult]) => {
-              const resultTable = getHorizontalTableWithHeaders([
-                'Application',
-                'Dependency',
-                'Installed',
-                'Required',
-                'Valid',
-              ]);
-              resultTable.push(
-                ...createApplicationResultRows(groupResult.applicationResults),
-              );
-              return [...acc, resultTable];
-            },
-            [] as HorizontalTable[],
-          );
-          verboseResult = `\n${tables.map(t => t.toString()).join('\n')}\n`;
-        }
-
-        // TODO refactor this to be less imperative
-        return tryCatch(
-          async () => {
-            if (result.result === 'FAIL') {
-              const groups = Object.entries(result.groupResults);
-              const failedGroups = groups
-                .filter(([, groupResult]) => groupResult.result === 'FAIL')
-                .map(([group]) => group);
-              throw VersionGuardError.from(
-                `${verboseResult}${pluralize(
-                  'Group',
-                  failedGroups.length,
-                )} ${emphasize`${failedGroups.join(
-                  ', ',
-                )} did not meet dependency version requirements`}`,
-              );
-            }
-
-            return HandlerResult.create(
-              result.result === 'PASS'
-                ? LogMessage.create(`${verboseResult}Check passed!`)
-                : LogMessage.create(
-                    `${verboseResult}Check tentatively passed!`,
-                    'warning',
+      argv._asyncResult = pipe(
+        checkDependencies({
+          config: config.contents,
+          configPath: config.path,
+          groups: group,
+          sets: set,
+          applications: app,
+        }),
+        chain(result => {
+          let verboseResult = '';
+          if (verbose) {
+            const tables = Object.entries(result.groupResults).reduce(
+              (acc, [, groupResult]) => {
+                const resultTable = getHorizontalTableWithHeaders([
+                  'Application',
+                  'Dependency',
+                  'Installed',
+                  'Required',
+                  'Valid',
+                ]);
+                resultTable.push(
+                  ...createApplicationResultRows(
+                    groupResult.applicationResults,
                   ),
-              result,
+                );
+                return [...acc, resultTable];
+              },
+              [] as HorizontalTable[],
             );
-          },
-          (err: unknown) => err as VersionGuardError,
-        );
-      });
+            verboseResult = `\n${tables.map(t => t.toString()).join('\n')}\n`;
+          }
+
+          // TODO refactor this to be less imperative
+          return tryCatch(
+            async () => {
+              if (result.result === 'FAIL') {
+                const groups = Object.entries(result.groupResults);
+                const failedGroups = groups
+                  .filter(([, groupResult]) => groupResult.result === 'FAIL')
+                  .map(([group]) => group);
+                throw VersionGuardError.from(
+                  `${verboseResult}${pluralize(
+                    'Group',
+                    failedGroups.length,
+                  )} ${emphasize`${failedGroups.join(
+                    ', ',
+                  )} did not meet dependency version requirements`}`,
+                );
+              }
+
+              return HandlerResult.create(
+                result.result === 'PASS'
+                  ? LogMessage.create(`${verboseResult}Check passed!`)
+                  : LogMessage.create(
+                      `${verboseResult}Check tentatively passed!`,
+                      'warning',
+                    ),
+                result,
+              );
+            },
+            (err: unknown) => err as VersionGuardError,
+          );
+        }),
+      );
     },
   );
 }

@@ -1,4 +1,5 @@
-import { Either } from 'fp-ts/lib/Either';
+import { Either, chain, map } from 'fp-ts/lib/Either';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 import { getGroupConfig } from '../utils';
 import { DependencySetConfig } from '../types';
@@ -38,9 +39,10 @@ export function createDependencySetInGroup({
   VersionGuardError,
   VersionGuardConfig
 > {
-  return getGroupConfig(groupName, config)
-    .chain(ensureSetDoesNotExist(setName))
-    .map(groupConfig => ({
+  return pipe(
+    getGroupConfig(groupName, config),
+    chain(ensureSetDoesNotExist(setName)),
+    map(groupConfig => ({
       ...config,
       [groupName]: {
         ...groupConfig,
@@ -49,5 +51,6 @@ export function createDependencySetInGroup({
           [setName]: createEmptyDependencySetConfig(),
         },
       },
-    }));
+    })),
+  );
 }

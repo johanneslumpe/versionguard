@@ -1,4 +1,6 @@
 import pluralize from 'pluralize';
+import { pipe } from 'fp-ts/lib/pipeable';
+import { chain, map } from 'fp-ts/lib/TaskEither';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { emphasize } from '../../../core/utils';
@@ -27,14 +29,15 @@ export function addApplicationCommand(
         .string('applicationpaths'),
     argv => {
       const { config, groupname, applicationpaths } = argv;
-      argv._asyncResult = addApplications({
-        config: config.contents,
-        groupName: groupname,
-        configPath: argv.config.path,
-        relativePaths: applicationpaths,
-      })
-        .chain(writeConfig(argv.config.path))
-        .map(updatedConfig =>
+      argv._asyncResult = pipe(
+        addApplications({
+          config: config.contents,
+          groupName: groupname,
+          configPath: argv.config.path,
+          relativePaths: applicationpaths,
+        }),
+        chain(writeConfig(argv.config.path)),
+        map(updatedConfig =>
           HandlerResult.create(
             LogMessage.create(
               `${pluralize(
@@ -49,7 +52,8 @@ export function addApplicationCommand(
             ),
             updatedConfig,
           ),
-        );
+        ),
+      );
     },
   );
 }

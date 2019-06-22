@@ -1,4 +1,5 @@
-import { Either } from 'fp-ts/lib/Either';
+import { Either, either } from 'fp-ts/lib/Either';
+import { Do } from 'fp-ts-contrib/lib/Do';
 
 import { getGroupConfig, getDependencySetConfig } from '../utils';
 import { VersionGuardConfig } from '../config';
@@ -67,13 +68,15 @@ export function setGracePeriod({
   config,
   gracePeriod,
 }: SetGracePeriodOptions): Either<VersionGuardError, VersionGuardConfig> {
-  return getGracePeriodValue(gracePeriod).chain(parsedGracePeriod =>
-    getGroupConfig(groupName, config).chain(groupConfig =>
-      getDependencySetConfig(setName, groupConfig)
-        .map(updateGracePeriod(parsedGracePeriod))
-        .map(
-          mergeUpdatedSetConfig({ groupConfig, setName, groupName, config }),
-        ),
-    ),
-  );
+  return Do(either)
+    .bind('parsedGracePeriod', getGracePeriodValue(gracePeriod))
+    .bind('groupConfig', getGroupConfig(groupName, config))
+    .bindL('setConfig', ({ groupConfig }) =>
+      getDependencySetConfig(setName, groupConfig),
+    )
+    .return(({ setConfig, groupConfig, parsedGracePeriod }) =>
+      mergeUpdatedSetConfig({ groupConfig, setName, groupName, config })(
+        updateGracePeriod(parsedGracePeriod)(setConfig),
+      ),
+    );
 }

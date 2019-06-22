@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import chalk from 'chalk';
 import yargs from 'yargs/yargs';
+import { log } from 'fp-ts/lib/Console';
+import { rightIO } from 'fp-ts/lib/TaskEither';
+import { IO } from 'fp-ts/lib/IO';
 
 import { configMiddleware } from './middleware/config';
 import { error } from './logging';
@@ -29,22 +32,24 @@ export async function executeCli(
       description: 'Path to config file',
     }) as ArgvWithGlobalOptions;
 
-  function handleError(err: Error | string): void {
-    const message = err instanceof Error ? err.message : err;
-    error(message);
-    // nasty string checking but required in order to show help in case
-    // an unknown argument/command is passed due to custom error handling
-    if (message.toLowerCase().includes('unknown argument')) {
-      cli.showHelp();
-    }
+  function handleError(err: Error | string): IO<void> {
+    return new IO(() => {
+      const message = err instanceof Error ? err.message : err;
+      error(message);
+      // nasty string checking but required in order to show help in case
+      // an unknown argument/command is passed due to custom error handling
+      if (message.toLowerCase().includes('unknown argument')) {
+        cli.showHelp();
+      }
 
-    if (exitProcessOnError) {
-      // push process exiting into next tick to
-      // ensure output gets logged prior to exiting
-      setTimeout(() => process.exit(1), 0);
-    } else {
-      deferredPromise.reject(new Error(message));
-    }
+      if (exitProcessOnError) {
+        // push process exiting into next tick to
+        // ensure output gets logged prior to exiting
+        setTimeout(() => process.exit(1), 0);
+      } else {
+        deferredPromise.reject(new Error(message));
+      }
+    });
   }
 
   // not using `commandDir` to ensure type-checking works as expected
@@ -60,7 +65,7 @@ export async function executeCli(
     .recommendCommands()
     .strict()
     .wrap(Math.min(cli.terminalWidth(), 150))
-    .fail((msg, err) => handleError(msg || err.message))
+    .fail((msg, err) => handleError(msg || err.message).run())
     .parse(
       args,
       async (
@@ -83,24 +88,33 @@ export async function executeCli(
         try {
           const result = await argv;
           if (result._asyncResult) {
-            (await result._asyncResult.run())
-              .map(result => console.log(result.message))
-              .map(deferredPromise.resolve)
-              .mapLeft(err => handleError(err));
+            // TODO swap out with fluid api below
+            // once type error is resolved
+            // await pipe(
+            //   result._asyncResult,
+            //   chain(result => rightIO(log(result.message))),
+            //   chain(() => rightIO(new IO(() => deferredPromise.resolve()))),
+            //   orElse(err => rightIO(handleError(err))),
+            // ).run();
+            await result._asyncResult
+              .chain(result => rightIO(log(result.message)))
+              .chain(() => rightIO(new IO(deferredPromise.resolve)))
+              .orElse(err => rightIO(handleError(err)))
+              .run();
           } else {
             // resolve deferred promise for default case with not arguments
             // this is required for help output to show
             deferredPromise.resolve();
           }
         } catch (e) {
-          handleError(e);
+          handleError(e).run();
         }
       },
     );
 
-  // this line exists only for interfacing with tests
-  // there is no need to catch any errors because when using
-  // when executing in cli-mode this will never be hit since errors will force the process to be exited immediately
+  // this line exists only for interfacing with tests.
+  // there is no need to catch any errors because when executing
+  // in cli-mode errors will force the process to be exited immediately
   await deferredPromise.promise;
   // show help at top level because commands will only show scoped help
   if (!argv._[0]) {

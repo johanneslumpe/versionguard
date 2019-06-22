@@ -1,4 +1,5 @@
-import { fromEither } from 'fp-ts/lib/TaskEither';
+import { fromEither, chain, map } from 'fp-ts/lib/TaskEither';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { removeGroup } from '../../../core/groups';
@@ -21,16 +22,16 @@ export function removeGroupCommand(
         .string('groupname'),
     argv => {
       const { groupname } = argv;
-      argv._asyncResult = fromEither(
-        removeGroup(groupname, argv.config.contents),
-      )
-        .chain(writeConfig(argv.config.path))
-        .map(result =>
+      argv._asyncResult = pipe(
+        fromEither(removeGroup(groupname, argv.config.contents)),
+        chain(writeConfig(argv.config.path)),
+        map(result =>
           HandlerResult.create(
             LogMessage.create(emphasize`Group ${groupname} removed!`),
             result,
           ),
-        );
+        ),
+      );
     },
   );
 }

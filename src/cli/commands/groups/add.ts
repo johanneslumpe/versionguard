@@ -1,4 +1,5 @@
-import { fromEither } from 'fp-ts/lib/TaskEither';
+import { fromEither, chain, map } from 'fp-ts/lib/TaskEither';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { addGroup } from '../../../core/groups';
@@ -20,16 +21,16 @@ export function addGroupCommand(
         })
         .string('groupname'),
     argv => {
-      argv._asyncResult = fromEither(
-        addGroup(argv.groupname, argv.config.contents),
-      )
-        .chain(writeConfig(argv.config.path))
-        .map(data =>
+      argv._asyncResult = pipe(
+        fromEither(addGroup(argv.groupname, argv.config.contents)),
+        chain(writeConfig(argv.config.path)),
+        map(data =>
           HandlerResult.create(
             LogMessage.create(emphasize`Group ${argv.groupname} added!`),
             data,
           ),
-        );
+        ),
+      );
     },
   );
 }

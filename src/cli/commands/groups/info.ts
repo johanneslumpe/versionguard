@@ -1,11 +1,12 @@
 import chalk from 'chalk';
 import { CrossTableRow } from 'cli-table3';
+import { fromEither, map } from 'fp-ts/lib/TaskEither';
+import { pipe } from 'fp-ts/lib/pipeable';
 
 import { ArgvWithGlobalOptions } from '../../types';
 import { getGroupConfig } from '../../../core/utils';
 import { GroupConfig } from '../../../core/groups';
 import { getCrossTableWithHeaders, formatDuration } from '../../utils';
-import { fromEither } from 'fp-ts/lib/TaskEither';
 import { HandlerResult } from '../../HandlerResult';
 import { LogMessage } from '../../LogMessage';
 
@@ -39,31 +40,32 @@ export function groupInfoCommand(
         .string('groupname'),
     argv => {
       const { groupname } = argv;
-      argv._asyncResult = fromEither(
-        getGroupConfig(groupname, argv.config.contents),
-      ).map(groupConfig => {
-        const dependencySetTable = getCrossTableWithHeaders([
-          '',
-          'Dependencies',
-          'Grace period',
-        ]);
-        dependencySetTable.push(...getDependencySetTableRows(groupConfig));
-        return HandlerResult.create(
-          LogMessage.create(
-            `${chalk.bold(`${groupname}\n\n`)}${chalk.bold(
-              'Applications: ',
-            )}${groupConfig.applications
-              .map(
-                ({ name, path }) =>
-                  `${name}${path !== name ? ` (${path})` : ''}`,
-              )
-              .join(', ')}\n\n${chalk.bold(
-              'Dependency sets',
-            )}\n${dependencySetTable.toString()}`.trim(),
-          ),
-          groupConfig,
-        );
-      });
+      argv._asyncResult = pipe(
+        fromEither(getGroupConfig(groupname, argv.config.contents)),
+        map(groupConfig => {
+          const dependencySetTable = getCrossTableWithHeaders([
+            '',
+            'Dependencies',
+            'Grace period',
+          ]);
+          dependencySetTable.push(...getDependencySetTableRows(groupConfig));
+          return HandlerResult.create(
+            LogMessage.create(
+              `${chalk.bold(`${groupname}\n\n`)}${chalk.bold(
+                'Applications: ',
+              )}${groupConfig.applications
+                .map(
+                  ({ name, path }) =>
+                    `${name}${path !== name ? ` (${path})` : ''}`,
+                )
+                .join(', ')}\n\n${chalk.bold(
+                'Dependency sets',
+              )}\n${dependencySetTable.toString()}`.trim(),
+            ),
+            groupConfig,
+          );
+        }),
+      );
     },
   );
 }

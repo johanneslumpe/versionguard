@@ -1,5 +1,6 @@
 import path from 'path';
-import { TaskEither, fromEither } from 'fp-ts/lib/TaskEither';
+import { TaskEither, fromEither, taskEither } from 'fp-ts/lib/TaskEither';
+import { Do } from 'fp-ts-contrib/lib/Do';
 
 import { getGroupConfig, normalizePaths } from '../utils';
 import { VersionGuardConfig } from '../config';
@@ -58,28 +59,31 @@ export function addApplications({
   groupName,
   config,
 }: AddApplicationOptions): TaskEither<VersionGuardError, VersionGuardConfig> {
-  return fromEither(getGroupConfig(groupName, config)).chain(groupConfig =>
-    fromEither(
-      ensurePathsDoNotExistForApplications({
-        paths: normalizePaths({ configPath, relativePaths }),
-        groupName,
-      })(groupConfig),
-    ).chain(paths =>
-      readApplicationMetaDataForPaths(path.dirname(configPath))(paths).map(
-        packageJsons => ({
-          ...config,
-          [groupName]: {
-            ...groupConfig,
-            applications: groupConfig.applications.concat(
-              packageJsons
-                .map(
-                  (packageJson, index) => [paths[index], packageJson] as const,
-                )
-                .map(createApplication),
-            ),
-          },
-        }),
+  return Do(taskEither)
+    .bind('groupConfig', fromEither(getGroupConfig(groupName, config)))
+    .bindL('paths', context =>
+      fromEither(
+        ensurePathsDoNotExistForApplications({
+          paths: normalizePaths({ configPath, relativePaths }),
+          groupName,
+        })(context.groupConfig),
       ),
-    ),
-  );
+    )
+    .bindL('packageJsons', context =>
+      readApplicationMetaDataForPaths(path.dirname(configPath))(context.paths),
+    )
+    .return(context => ({
+      ...config,
+      [groupName]: {
+        ...context.groupConfig,
+        applications: context.groupConfig.applications.concat(
+          context.packageJsons
+            .map(
+              (packageJson, index) =>
+                [context.paths[index], packageJson] as const,
+            )
+            .map(createApplication),
+        ),
+      },
+    }));
 }

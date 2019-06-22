@@ -1,7 +1,7 @@
 import { TaskEither } from 'fp-ts/lib/TaskEither';
 import { HorizontalTable, HorizontalTableRow } from 'cli-table3';
 import chalk from 'chalk';
-import logSymbols = require('log-symbols');
+import logSymbols from 'log-symbols';
 
 import { Logger } from '../Logger';
 import { LogMessage } from '../LogMessage';

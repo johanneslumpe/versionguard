@@ -1,4 +1,4 @@
-import logSymbols = require('log-symbols');
+import logSymbols from 'log-symbols';
 import humanizeDuration from 'humanize-duration';
 import Table, { HorizontalTable, CrossTable } from 'cli-table3';
 import { pipe } from 'fp-ts/lib/pipeable';

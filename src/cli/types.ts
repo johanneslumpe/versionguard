@@ -21,3 +21,39 @@ export type ArgumentsWithConfigAndGlobalOptions = Arguments<
 export type ArgvWithGlobalOptions = Argv<
   CustomArgumentProperties & GlobalOptions
 >;
+
+/**
+ * Public JSON API types
+ *
+ * The types represent the public api for `--json` output of the CLI. Any change other than adding new information
+ * should be considered a breaking change.
+ */
+
+export interface AddApplicationCommandResult {
+  type: 'ADD_APPLICATION';
+  result: {
+    group: string;
+    application: {
+      name: string;
+      path: string;
+    };
+  };
+}
+
+export interface RemoveApplicationCommandResult {
+  type: 'REMOVE_APPLICATION';
+  result: {
+    group: string;
+    application: {
+      name: string;
+      path: string;
+    };
+  };
+}
+
+export interface GroupsListCommandResult {
+  type: 'GROUPS_LIST';
+  result: {
+    groups: string[];
+  };
+}

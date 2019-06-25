@@ -2,15 +2,18 @@ import chalk from 'chalk';
 import semver from 'semver';
 import path from 'path';
 import json5 from 'json5';
-import { left, Either, right, tryCatch } from 'fp-ts/lib/Either';
+import { left, Either, right, tryCatch, tryCatch2v } from 'fp-ts/lib/Either';
 
 import { VersionGuardConfig } from './config';
 import { GroupConfig } from './groups';
 import { VersionGuardError } from './errors';
 import { DependencySetConfig } from './types';
 
-export function jsonStringify(data: object): string {
-  return json5.stringify(data);
+export function json5Stringify<L>(
+  data: object,
+  onError: (reason: unknown) => L,
+): Either<L, string> {
+  return tryCatch2v(() => json5.stringify(data), onError);
 }
 
 export function jsonParse(data: string): unknown {

@@ -3,7 +3,7 @@ import fs from 'fs';
 import findUp from 'find-up';
 import { TaskEither, tryCatch } from 'fp-ts/lib/TaskEither';
 
-import { emphasize, jsonStringify, jsonParse } from './utils';
+import { emphasize, jsonParse, json5Stringify } from './utils';
 import { GroupConfig } from './groups/add';
 import { Dictionary } from './types';
 import { VersionGuardError } from './errors';
@@ -46,8 +46,7 @@ export function writeConfig(
       async () => {
         await fs.promises.writeFile(
           path,
-          `${JSON_HEADER}
-      ${jsonStringify(data)}`,
+          `${JSON_HEADER}\n${json5Stringify(data, err => err).value}`,
         );
         return data;
       },

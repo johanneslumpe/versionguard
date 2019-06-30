@@ -1,4 +1,5 @@
 import { LogMessage } from './LogMessage';
+import { PublicHandlerResult } from './types';
 
 /**
  * Data type to signify successful handler execution
@@ -6,14 +7,17 @@ import { LogMessage } from './LogMessage';
  */
 export class HandlerResult {
   private _message: LogMessage;
-  private _data: object;
+  private _data: PublicHandlerResult;
 
-  public constructor(message: LogMessage, data: object) {
+  public constructor(message: LogMessage, data: PublicHandlerResult) {
     this._data = data;
     this._message = message;
   }
 
-  public static create(message: LogMessage, data: object): HandlerResult {
+  public static create(
+    message: LogMessage,
+    data: PublicHandlerResult,
+  ): HandlerResult {
     return new HandlerResult(message, data);
   }
 

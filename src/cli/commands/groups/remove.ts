@@ -26,10 +26,15 @@ export function removeGroupCommand(
       argv._asyncResult = pipe(
         removeGroup(groupname, opts.logger)(argv.config.contents),
         chain(writeConfig(argv.config.path, opts.logger)),
-        map(result =>
+        map(() =>
           HandlerResult.create(
             LogMessage.success(emphasize`Group ${groupname} removed!`),
-            result,
+            {
+              type: 'GROUPS:REMOVE',
+              result: {
+                group: groupname,
+              },
+            },
           ),
         ),
       );

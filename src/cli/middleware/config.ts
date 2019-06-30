@@ -8,6 +8,7 @@ import {
   getConfigPathForBase,
 } from '../../core/config';
 import { emphasize } from '../../core/utils';
+import { GlobalOptions } from '../types';
 
 interface ConfigData {
   config: {
@@ -24,15 +25,17 @@ interface ConfigData {
 }
 
 export async function configMiddleware(
-  yargs: Arguments<{ 'config-path'?: string }>,
+  yargs: Arguments<GlobalOptions>,
 ): Promise<ConfigData> {
   let configPath = yargs['config-path'] || (await findConfig());
   let config: VersionGuardConfig;
   if (!configPath) {
     configPath = getConfigPathForBase('.');
-    console.log(
-      emphasize`No config file found, creating config at path: ${configPath}`,
-    );
+    if (!!yargs.verbose) {
+      console.log(
+        emphasize`No config file found, creating config at path: ${configPath}`,
+      );
+    }
     config = {};
     await writeConfig(configPath)(config).run();
   } else {

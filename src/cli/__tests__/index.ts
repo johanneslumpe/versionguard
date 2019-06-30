@@ -93,7 +93,7 @@ describe('versionguard', () => {
 
   describe('global', () => {
     it('should create a config file if none exists when calling a command', async () => {
-      await executeCli(['groups:list']);
+      await executeCli(['groups:list', '--verbose']);
       expect(getCleanedMockStdout()).toContain(
         `No config file found, creating config at path: ${process.cwd()}/.versionguardrc.json`,
       );
@@ -109,53 +109,106 @@ describe('versionguard', () => {
   });
 
   describe('groups', () => {
-    it('`groups:add` should allow adding', async () => {
-      const output = await executeCliWithCopiedConfigFixture(
-        'groups/two_groups',
-      )('groups:add', 'test');
-      expect(getCleanedMockStdout()).toContain('✔ Group test added!');
-      await assertGroupListContainsGroupsInOrder(
-        output.configPath,
-        'a',
-        'b',
-        'test',
-      );
+    describe('groups:add', () => {
+      it('should allow adding', async () => {
+        const output = await executeCliWithCopiedConfigFixture(
+          'groups/two_groups',
+        )('groups:add', 'test');
+        expect(getCleanedMockStdout()).toContain('✔ Group test added!');
+        await assertGroupListContainsGroupsInOrder(
+          output.configPath,
+          'a',
+          'b',
+          'test',
+        );
+      });
+
+      it('should return JSON if requested', async () => {
+        await executeCliWithCopiedConfigFixture('groups/two_groups')(
+          'groups:add',
+          'test',
+          '--json',
+        );
+        expect(getCleanedMockStdout()).toBe(
+          `{type:'GROUPS:ADD',result:{group:'test'}}`,
+        );
+      });
     });
 
-    it('`groups:rename` should allow renaming', async () => {
-      const output = await executeCliWithCopiedConfigFixture(
-        'groups/two_groups',
-      )('groups:rename', 'a', 'test');
-      expect(getCleanedMockStdout()).toContain('✔ Group a renamed to test!');
-      await assertGroupListContainsGroupsInOrder(
-        output.configPath,
-        'b',
-        'test',
-      );
+    describe('groups:rename', () => {
+      it('should allow renaming', async () => {
+        const output = await executeCliWithCopiedConfigFixture(
+          'groups/two_groups',
+        )('groups:rename', 'a', 'test');
+        expect(getCleanedMockStdout()).toContain('✔ Group a renamed to test!');
+        await assertGroupListContainsGroupsInOrder(
+          output.configPath,
+          'b',
+          'test',
+        );
+      });
+
+      it('should return JSON if requested', async () => {
+        await executeCliWithCopiedConfigFixture('groups/two_groups')(
+          'groups:rename',
+          'a',
+          'test',
+          '--json',
+        );
+        expect(getCleanedMockStdout()).toBe(
+          `{type:'GROUPS:RENAME',result:{from:'a',to:'test'}}`,
+        );
+      });
     });
 
-    it('`groups:remove` should allow removing', async () => {
-      const output = await executeCliWithCopiedConfigFixture(
-        'groups/two_groups',
-      )('groups:remove', 'a');
-      expect(getCleanedMockStdout()).toContain('✔ Group a removed!');
-      await assertGroupListContainsGroupsInOrder(output.configPath, 'b');
+    describe('groups:remove', () => {
+      it('should allow removing', async () => {
+        const output = await executeCliWithCopiedConfigFixture(
+          'groups/two_groups',
+        )('groups:remove', 'a');
+        expect(getCleanedMockStdout()).toContain('✔ Group a removed!');
+        await assertGroupListContainsGroupsInOrder(output.configPath, 'b');
+      });
+
+      it('should return JSON if requested', async () => {
+        await executeCliWithCopiedConfigFixture('groups/two_groups')(
+          'groups:remove',
+          'a',
+          '--json',
+        );
+        expect(getCleanedMockStdout()).toBe(
+          `{type:'GROUPS:REMOVE',result:{group:'a'}}`,
+        );
+      });
     });
 
-    it('`groups:list` should list all groups', async () => {
-      await executeCliWithCopiedConfigFixture('groups/two_groups')(
-        'groups:list',
-      );
-      expect(getCleanedMockStdout()).toBe(formatGroupListOutput(['a', 'b']));
+    describe('groups:list', () => {
+      it('should list all groups', async () => {
+        await executeCliWithCopiedConfigFixture('groups/two_groups')(
+          'groups:list',
+        );
+        expect(getCleanedMockStdout()).toBe(formatGroupListOutput(['a', 'b']));
+      });
+
+      it('should return JSON if requested', async () => {
+        await executeCliWithCopiedConfigFixture('groups/two_groups')(
+          'groups:list',
+          '--json',
+        );
+        expect(getCleanedMockStdout()).toBe(
+          `{type:'GROUPS:LIST',result:{groups:['a','b']}}`,
+        );
+      });
     });
 
-    it('`groups:info` should show info for a single group', async () => {
-      await executeCliWithCopiedConfigFixture('groups/one_complete_group')(
-        'groups:info',
-        'a',
-      );
+    describe('groups:info', () => {
+      it('should show info for a single group', async () => {
+        await executeCliWithCopiedConfigFixture('groups/one_complete_group')(
+          'groups:info',
+          'a',
+        );
 
-      expect(getCleanedMockStdout()).toContain(`a
+        expect(getCleanedMockStdout()).toContain(`a
 
 Applications: application-a (application_a), application-b (application_b)
 
@@ -166,83 +219,163 @@ Dependency sets
 │public │dep_a@1.0.0, dep_b@2.0.0│Infinity    │
 │private│dep_c@3.0.0             │Infinity    │
 └───────┴────────────────────────┴────────────┘`);
+      });
+
+      it('should return JSON if requested', async () => {
+        await executeCliWithCopiedConfigFixture('groups/one_complete_group')(
+          'groups:info',
+          'a',
+          '--json',
+        );
+        expect(getCleanedMockStdout()).toBe(
+          `{type:'GROUPS:INFO',result:{group:{name:'a',applications:[{path:'application_a',name:'application-a'},{path:'application_b',name:'application-b'}],dependencySets:{public:{dependencies:{dep_a:{addedAt:1560081600000,semanticVersion:'dep_a@1.0.0'},dep_b:{addedAt:1560081600000,semanticVersion:'dep_b@2.0.0'}},name:'public',gracePeriod:Infinity},private:{dependencies:{dep_c:{addedAt:1560081600000,semanticVersion:'dep_c@3.0.0'}},name:'private',gracePeriod:Infinity}}}}}`,
+        );
+      });
     });
   });
 
   describe('applications', () => {
-    it('`applications:add` should allow adding an application to a group', async () => {
-      const { configPath } = await executeCliWithCopiedConfigFixture(
-        'applications/empty_group',
-      )('applications:add', 'a', 'application_a');
-      expect(getCleanedMockStdout()).toContain(
-        '✔ Application in path application_a added to group a',
-      );
-      await executeCliWithConfigPath(configPath, 'groups:info', 'a');
-      expect(getCleanedMockStdout()).toContain(
-        'Applications: application-a (application_a)',
-      );
+    describe('applications:add', () => {
+      it('should allow adding an application to a group', async () => {
+        const { configPath } = await executeCliWithCopiedConfigFixture(
+          'applications/empty_group',
+        )('applications:add', 'a', 'application_a');
+        expect(getCleanedMockStdout()).toContain(
+          '✔ Application in path application_a added to group a',
+        );
+        await executeCliWithConfigPath(configPath, 'groups:info', 'a');
+        expect(getCleanedMockStdout()).toContain(
+          'Applications: application-a (application_a)',
+        );
+      });
+
+      it('should allow adding multiple applications to a group', async () => {
+        const { configPath } = await executeCliWithCopiedConfigFixture(
+          'applications/empty_group',
+        )('applications:add', 'a', 'application_a', 'application_b');
+        expect(getCleanedMockStdout()).toContain(
+          '✔ Applications in paths application_a, application_b added to group a',
+        );
+        await executeCliWithConfigPath(configPath, 'groups:info', 'a');
+        expect(getCleanedMockStdout()).toContain(
+          'Applications: application-a (application_a), application-b (application_b)',
+        );
+      });
+
+      it('should return JSON if requested', async () => {
+        await executeCliWithCopiedConfigFixture('applications/empty_group')(
+          'applications:add',
+          'a',
+          'application_a',
+          'application_b',
+          '--json',
+        );
+        expect(getCleanedMockStdout()).toBe(
+          `{type:'APPLICATIONS:ADD',result:{group:'a',applications:[{name:'application-a',path:'application_a'},{name:'application-b',path:'application_b'}]}}`,
+        );
+      });
     });
 
-    it('`applications:add` should allow adding multiple applications to a group', async () => {
-      const { configPath } = await executeCliWithCopiedConfigFixture(
-        'applications/empty_group',
-      )('applications:add', 'a', 'application_a', 'application_b');
-      expect(getCleanedMockStdout()).toContain(
-        '✔ Applications in paths application_a, application_b added to group a',
-      );
-      await executeCliWithConfigPath(configPath, 'groups:info', 'a');
-      expect(getCleanedMockStdout()).toContain(
-        'Applications: application-a (application_a), application-b (application_b)',
-      );
-    });
+    describe('applications:remove', () => {
+      it('should allow removing an application from a group', async () => {
+        const { configPath } = await executeCliWithCopiedConfigFixture(
+          'applications/one_application',
+        )('applications:remove', 'a', 'application_a');
+        expect(getCleanedMockStdout()).toContain(
+          '✔ Application in path application_a removed from group a',
+        );
+        await executeCliWithConfigPath(configPath, 'groups:info', 'a');
+        expect(getCleanedMockStdout()).not.toContain('application_a');
+      });
 
-    it('`applications:remove` should allow removing an application from a group', async () => {
-      const { configPath } = await executeCliWithCopiedConfigFixture(
-        'applications/one_application',
-      )('applications:remove', 'a', 'application_a');
-      expect(getCleanedMockStdout()).toContain(
-        '✔ Application in path application_a removed from group a',
-      );
-      await executeCliWithConfigPath(configPath, 'groups:info', 'a');
-      expect(getCleanedMockStdout()).not.toContain('application_a');
-    });
+      it('should allow removing multiple applications from a group', async () => {
+        const { configPath } = await executeCliWithCopiedConfigFixture(
+          'applications/two_applications',
+        )('applications:remove', 'a', 'application_a', 'application_b');
+        expect(getCleanedMockStdout()).toContain(
+          '✔ Applications in paths application_a, application_b removed from group a',
+        );
+        await executeCliWithConfigPath(configPath, 'groups:info', 'a');
+        const output = getCleanedMockStdout();
+        expect(output).not.toContain('application_a');
+        expect(output).not.toContain('application_b');
+      });
 
-    it('`applications:remove` should allow removing multiple applications from a group', async () => {
-      const { configPath } = await executeCliWithCopiedConfigFixture(
-        'applications/two_applications',
-      )('applications:remove', 'a', 'application_a', 'application_b');
-      expect(getCleanedMockStdout()).toContain(
-        '✔ Applications in paths application_a, application_b removed from group a',
-      );
-      await executeCliWithConfigPath(configPath, 'groups:info', 'a');
-      const output = getCleanedMockStdout();
-      expect(output).not.toContain('application_a');
-      expect(output).not.toContain('application_b');
+      it('should return JSON if requested', async () => {
+        await executeCliWithCopiedConfigFixture(
+          'applications/two_applications',
+        )(
+          'applications:remove',
+          'a',
+          'application_a',
+          'application_b',
+          '--json',
+        );
+        expect(getCleanedMockStdout()).toBe(
+          `{type:'APPLICATIONS:REMOVE',result:{group:'a',applications:['application_a','application_b']}}`,
+        );
+      });
     });
   });
 
   describe('dependencies', () => {
-    it('`dependencies:create-set` should allow adding a dependency set to a group', async () => {
-      await executeCliWithCopiedConfigFixture('dependencies/one_group')(
-        'dependencies:create-set',
-        'a',
-        'set_a',
-      );
-      expect(getCleanedMockStdout()).toContain(
-        '✔ Dependency set set_a created within group a',
-      );
+    describe('dependencies:create-set', () => {
+      it('should allow adding a dependency set to a group', async () => {
+        await executeCliWithCopiedConfigFixture('dependencies/one_group')(
+          'dependencies:create-set',
+          'a',
+          'set_a',
+        );
+        expect(getCleanedMockStdout()).toContain(
+          '✔ Dependency set set_a created within group a',
+        );
+      });
+
+      it('should return JSON if requested', async () => {
+        await executeCliWithCopiedConfigFixture('dependencies/one_group')(
+          'dependencies:create-set',
+          'a',
+          'set_a',
+          '--json',
+        );
+        expect(getCleanedMockStdout()).toBe(
+          `{type:'DEPENDENCY_SET:CREATE',result:{group:'a',dependencySet:{name:'set_a',gracePeriod:Infinity,dependencies:{}}}}`,
+        );
+      });
     });
 
-    it('`dependencies:delete-set` should allow removing a dependency set from a group', async () => {
-      await executeCliWithCopiedConfigFixture(
-        'dependencies/one_dependency_set',
-      )('dependencies:delete-set', 'a', 'set_a');
-      expect(getCleanedMockStdout()).toContain(
-        '✔ Dependency set set_a deleted from group a',
-      );
+    describe('dependencies:delete-set', () => {
+      it('should allow removing a dependency set from a group', async () => {
+        await executeCliWithCopiedConfigFixture(
+          'dependencies/one_dependency_set',
+        )('dependencies:delete-set', 'a', 'set_a');
+        expect(getCleanedMockStdout()).toContain(
+          '✔ Dependency set set_a deleted from group a',
+        );
+      });
+
+      it('should return JSON if requested', async () => {
+        await executeCliWithCopiedConfigFixture(
+          'dependencies/one_dependency_set',
+        )('dependencies:delete-set', 'a', 'set_a', '--json');
+        expect(getCleanedMockStdout()).toBe(
+          `{type:'DEPENDENCY_SET:DELETE',result:{group:'a',dependencySet:'set_a'}}`,
+        );
+      });
     });
 
     describe('dependencies:add', () => {
+      const DEPENDENCY_ADDED_DATE = 1560081600000;
+      let dateNowMock: jest.SpyInstance<number, []>;
+
+      beforeEach(() => {
+        dateNowMock = jest
+          .spyOn(Date, 'now')
+          .mockImplementation(() => DEPENDENCY_ADDED_DATE);
+      });
+
+      afterEach(() => dateNowMock.mockRestore());
+
       it('should allow adding a dependency to a dependency set within a group', async () => {
         await executeCliWithCopiedConfigFixture(
           'dependencies/one_dependency_set',
@@ -310,20 +443,40 @@ Dependency sets
           │private│            │Infinity    │
         `);
       });
+
+      it('should return JSON if requested', async () => {
+        await executeCliWithCopiedConfigFixture(
+          'dependencies/one_dependency_set',
+        )('dependencies:add', 'a', 'set_a', 'dep_a@1.0.0', '--json');
+        expect(getCleanedMockStdout()).toBe(
+          `{type:'DEPENDENCY:ADD_TO_SET',result:{group:'a',dependencySet:'set_a',dependency:{addedAt:${DEPENDENCY_ADDED_DATE},semanticVersion:'dep_a@1.0.0'}}}`,
+        );
+      });
     });
 
-    it('`dependencies:remove` should allow removing a dependency from a dependency set within a group', async () => {
-      const { configPath } = await executeCliWithCopiedConfigFixture(
-        'dependencies/existing_dependency_in_set',
-      )('dependencies:remove', 'a', 'public', 'dep_a');
-      expect(getCleanedMockStdout()).toContain(
-        '✔ Dependency dep_a successfully removed from set public within group a',
-      );
-      await executeCliWithConfigPath(configPath, 'groups:info', 'a');
-      expect(getCleanedMockStdout()).toContain(trim`
-        │public │            │Infinity    │
-        │private│            │Infinity    │
-      `);
+    describe('dependencies:remove', () => {
+      it('should allow removing a dependency from a dependency set within a group', async () => {
+        const { configPath } = await executeCliWithCopiedConfigFixture(
+          'dependencies/existing_dependency_in_set',
+        )('dependencies:remove', 'a', 'public', 'dep_a');
+        expect(getCleanedMockStdout()).toContain(
+          '✔ Dependency dep_a successfully removed from set public within group a',
+        );
+        await executeCliWithConfigPath(configPath, 'groups:info', 'a');
+        expect(getCleanedMockStdout()).toContain(trim`
+          │public │            │Infinity    │
+          │private│            │Infinity    │
+        `);
+      });
+
+      it('should return JSON if requested', async () => {
+        await executeCliWithCopiedConfigFixture(
+          'dependencies/existing_dependency_in_set',
+        )('dependencies:remove', 'a', 'public', 'dep_a', '--json');
+        expect(getCleanedMockStdout()).toBe(
+          `{type:'DEPENDENCY:REMOVE_FROM_SET',result:{group:'a',dependencySet:'public',dependency:'dep_a'}}`,
+        );
+      });
     });
 
     describe('dependencies:grace-period', () => {
@@ -363,6 +516,15 @@ Dependency sets
           );
         }
       });
+
+      it('should return JSON if requested', async () => {
+        await executeCliWithCopiedConfigFixture(
+          'dependencies/one_dependency_set',
+        )('dependencies:grace-period', 'a', 'set_a', '30d', '--json');
+        expect(getCleanedMockStdout()).toBe(
+          `{type:'DEPENDENCY_SET:SET_GRACE_PERIOD',result:{group:'a',dependencySet:'set_a',gracePeriod:2592000000}}`,
+        );
+      });
     });
   });
 
@@ -394,6 +556,16 @@ Dependency sets
             └─────────────┴──────────┴─────────┴────────┴─────┘
             ✔ Check passed!
           `);
+        });
+
+        it('should return JSON if requested', async () => {
+          await executeCliWithCopiedConfigFixture('check/simple-config-valid')(
+            'check',
+            '--json',
+          );
+          expect(getCleanedMockStdout()).toBe(
+            `{type:'VERSIONCHECK',result:{groups:{'all-valid-a':{status:'PASS',applications:{application_a:{status:'PASS',dependencies:[{dependency:'dep_a',currentVersion:'^1.0.0',requiredVersion:'1.x',status:'PASS',timeLeftForUpgrade:Infinity},{dependency:'dep_b',currentVersion:'1.2.3',requiredVersion:'1.x',status:'PASS',timeLeftForUpgrade:Infinity},{dependency:'dep_c',currentVersion:'~1.5.0',requiredVersion:'1.x',status:'PASS',timeLeftForUpgrade:Infinity}]},application_b:{status:'PASS',dependencies:[{dependency:'dep_a',currentVersion:'^1.0.0',requiredVersion:'1.x',status:'PASS',timeLeftForUpgrade:Infinity},{dependency:'dep_b',currentVersion:'1.2.3',requiredVersion:'1.x',status:'PASS',timeLeftForUpgrade:Infinity},{dependency:'dep_c',currentVersion:'~1.5.0',requiredVersion:'1.x',status:'PASS',timeLeftForUpgrade:Infinity}]}}}},status:'PASS'}}`,
+          );
         });
       });
 
@@ -456,30 +628,29 @@ Dependency sets
     describe('some invalid entries within grace period', () => {
       // needs to be in sync with value used in config fixtures
       const DEPENDENCY_ADDED_DATE = 1560081600000;
-      it('should pass', async () => {
-        const mock = jest
+      let dateNowMock: jest.SpyInstance<number, []>;
+
+      beforeEach(() => {
+        dateNowMock = jest
           .spyOn(Date, 'now')
           .mockImplementation(() =>
             addDays(DEPENDENCY_ADDED_DATE, 6).getTime(),
           );
+      });
 
+      afterEach(() => dateNowMock.mockRestore());
+
+      it('should pass', async () => {
         await executeCliWithCopiedConfigFixture(
           'check/simple-config-grace-period',
         )('check');
-        mock.mockRestore();
         expect(getCleanedMockStdout()).toBe('⚠ Check tentatively passed!');
       });
 
       it('should pass, verbose', async () => {
-        const mock = jest
-          .spyOn(Date, 'now')
-          .mockImplementation(() =>
-            addDays(DEPENDENCY_ADDED_DATE, 6).getTime(),
-          );
         await executeCliWithCopiedConfigFixture(
           'check/simple-config-grace-period',
         )('check', '--verbose');
-        mock.mockRestore();
         expect(getCleanedMockStdout()).toContain(trim`
           ┌─────────────┬──────────┬─────────┬────────┬────────────────────────┐
           │Application  │Dependency│Installed│Required│Valid                   │

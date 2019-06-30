@@ -3,7 +3,7 @@ import { CrossTableRow } from 'cli-table3';
 import { fromEither, map } from 'fp-ts/lib/TaskEither';
 import { pipe } from 'fp-ts/lib/pipeable';
 
-import { ArgvWithGlobalOptions } from '../../types';
+import { ArgvWithGlobalOptions, PublicDependencySet } from '../../types';
 import { getGroupConfig, emphasize } from '../../../core/utils';
 import { GroupConfig } from '../../../core/groups';
 import {
@@ -11,10 +11,12 @@ import {
   formatDuration,
   PipeCommandArgs,
   loggableTaskEither,
+  convertInternalDependencyMapToPublicDependencyMap,
 } from '../../utils';
 import { HandlerResult } from '../../HandlerResult';
 import { LogMessage } from '../../LogMessage';
 import { VersionGuardError } from '../../../core/errors';
+import { Dictionary } from '../../../core/types';
 
 function getDependencySetTableRows(groupConfig: GroupConfig): CrossTableRow[] {
   return Object.keys(groupConfig.dependencies).map(set => {
@@ -61,6 +63,7 @@ export function groupInfoCommand(opts: PipeCommandArgs): ArgvWithGlobalOptions {
             'Grace period',
           ]);
           dependencySetTable.push(...getDependencySetTableRows(groupConfig));
+          const dependencyMap: Dictionary<PublicDependencySet> = {};
           return HandlerResult.create(
             LogMessage.success(
               `${chalk.bold(`${groupname}\n\n`)}${chalk.bold(
@@ -74,7 +77,27 @@ export function groupInfoCommand(opts: PipeCommandArgs): ArgvWithGlobalOptions {
                 'Dependency sets',
               )}\n${dependencySetTable.toString()}`.trim(),
             ),
-            groupConfig,
+            {
+              type: 'GROUPS:INFO',
+              result: {
+                group: {
+                  name: groupname,
+                  applications: groupConfig.applications,
+                  dependencySets: Object.entries(
+                    groupConfig.dependencies,
+                  ).reduce((acc, [setName, setConfig]) => {
+                    acc[setName] = {
+                      dependencies: convertInternalDependencyMapToPublicDependencyMap(
+                        setConfig.dependencySemvers,
+                      ),
+                      name: setName,
+                      gracePeriod: setConfig.gracePeriod,
+                    };
+                    return acc;
+                  }, dependencyMap),
+                },
+              },
+            },
           );
         }),
       );

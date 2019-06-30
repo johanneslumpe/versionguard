@@ -1,7 +1,14 @@
 #!/usr/bin/env node
 import chalk from 'chalk';
 import yargs from 'yargs/yargs';
-import { rightIO, chain, orElse, rightTask } from 'fp-ts/lib/TaskEither';
+import {
+  rightIO,
+  chain,
+  orElse,
+  rightTask,
+  fromEither,
+  TaskEither,
+} from 'fp-ts/lib/TaskEither';
 import { Task, fromIO, chain as chainTask } from 'fp-ts/lib/Task';
 import { IO } from 'fp-ts/lib/IO';
 import { pipe } from 'fp-ts/lib/pipeable';
@@ -19,6 +26,37 @@ import { versionCheckCommand } from './commands/versionCheck';
 import { addApplicationCommands } from './commands/applications';
 import { Logger } from './Logger';
 import { LogMessage } from './LogMessage';
+import { json5Stringify } from '../core/utils';
+import { VersionGuardError } from '../core/errors';
+import { HandlerResult } from './HandlerResult';
+
+function logOutput({
+  json,
+  logger,
+}: {
+  json?: boolean;
+  logger: Logger;
+}): (
+  handlerResult: HandlerResult,
+) => TaskEither<VersionGuardError, HandlerResult> {
+  return handlerResult =>
+    json
+      ? pipe(
+          fromEither(
+            json5Stringify(handlerResult.data, err => err as VersionGuardError),
+          ),
+          chain(str =>
+            rightIO(
+              logger
+                .logL(LogMessage.plain)(str)
+                .map(() => handlerResult),
+            ),
+          ),
+        )
+      : rightIO(
+          logger.logL<typeof handlerResult>(r => r.message)(handlerResult),
+        );
+}
 
 export async function executeCli(
   args: string[],
@@ -30,13 +68,17 @@ export async function executeCli(
     .version('0.1.0')
     .option('verbose', {
       type: 'boolean',
-      default: false,
       description: 'Show verbose output when available',
+    })
+    .option('json', {
+      type: 'boolean',
+      description: 'Output stringified JSON of handler results',
     })
     .option('config-path', {
       type: 'string',
       description: 'Path to config file',
-    }) as ArgvWithGlobalOptions;
+    })
+    .conflicts('verbose', 'json') as ArgvWithGlobalOptions;
 
   const logger = Logger.create();
 
@@ -102,17 +144,11 @@ export async function executeCli(
 
         try {
           const result = await argv;
-          logger.verbose = result.verbose;
+          logger.verbose = !!result.verbose;
           if (result._asyncResult) {
             await pipe(
               result._asyncResult,
-              chain(handlerResult =>
-                rightIO(
-                  logger.logL<typeof handlerResult>(result => result.message)(
-                    handlerResult,
-                  ),
-                ),
-              ),
+              chain(logOutput({ json: result.json, logger })),
               chain(() => rightIO(new IO(deferredPromise.resolve))),
               orElse(err => rightTask(handleError(err))),
             ).run();

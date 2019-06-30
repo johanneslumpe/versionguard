@@ -39,7 +39,7 @@ export function removeApplicationCommand(
           logger: opts.logger,
         })(config.contents),
         chain(writeConfig(argv.config.path, opts.logger)),
-        map(updatedConfig =>
+        map(() =>
           HandlerResult.create(
             LogMessage.success(
               emphasize`${pluralize(
@@ -52,7 +52,13 @@ export function removeApplicationCommand(
                 ', ',
               )} removed from group ${groupname}`,
             ),
-            updatedConfig,
+            {
+              type: 'APPLICATIONS:REMOVE',
+              result: {
+                group: groupname,
+                applications: applicationpaths,
+              },
+            },
           ),
         ),
       );

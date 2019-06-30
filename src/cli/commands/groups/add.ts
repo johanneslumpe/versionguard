@@ -23,10 +23,15 @@ export function addGroupCommand(opts: PipeCommandArgs): ArgvWithGlobalOptions {
       argv._asyncResult = pipe(
         addGroup(argv.groupname, opts.logger)(argv.config.contents),
         chain(writeConfig(argv.config.path, opts.logger)),
-        map(data =>
+        map(() =>
           HandlerResult.create(
             LogMessage.success(emphasize`Group ${argv.groupname} added!`),
-            data,
+            {
+              type: 'GROUPS:ADD',
+              result: {
+                group: argv.groupname,
+              },
+            },
           ),
         ),
       );

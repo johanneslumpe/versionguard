@@ -51,7 +51,13 @@ export function addApplicationCommand(
                 ', ',
               )}`} added to group ${groupname}`,
             ),
-            updatedConfig,
+            {
+              type: 'APPLICATIONS:ADD',
+              result: {
+                group: groupname,
+                applications: updatedConfig[groupname].applications,
+              },
+            },
           ),
         ),
       );

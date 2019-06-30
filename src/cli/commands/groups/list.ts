@@ -28,7 +28,12 @@ export function listGroupsCommand(
                     .trim()}`
                 : 'No groups found',
             ),
-            groups,
+            {
+              type: 'GROUPS:LIST',
+              result: {
+                groups,
+              },
+            },
           );
         }),
       );

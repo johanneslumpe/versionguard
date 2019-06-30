@@ -45,7 +45,15 @@ export function setGracePeriodCommand(
             LogMessage.success(
               emphasize`Grace period for dependency set ${setname} updated`,
             ),
-            updatedConfig,
+            {
+              type: 'DEPENDENCY_SET:SET_GRACE_PERIOD',
+              result: {
+                group: groupname,
+                dependencySet: setname,
+                gracePeriod:
+                  updatedConfig[groupname].dependencies[setname].gracePeriod,
+              },
+            },
           ),
         ),
       );

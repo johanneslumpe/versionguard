@@ -12,7 +12,10 @@ import { VersionGuardError } from '../../../core/errors';
 import { HandlerResult } from '../../HandlerResult';
 import { LogMessage } from '../../LogMessage';
 import { AddDependencyChangeType } from '../../../core/dependencies/utils/getGroupConfigWithCleanedDependencySetsAndChangeType';
-import { PipeCommandArgs } from '../../utils';
+import {
+  PipeCommandArgs,
+  convertInternalDependencyToPublicDependency,
+} from '../../utils';
 import { writeConfig } from '../../core/config';
 
 function getMessageForChangeType({
@@ -90,7 +93,17 @@ export function addDependencyCommand(
                     groupName: groupname,
                   }),
                 ),
-                updatedConfig,
+                {
+                  type: 'DEPENDENCY:ADD_TO_SET',
+                  result: {
+                    group: groupname,
+                    dependencySet: setname,
+                    dependency: convertInternalDependencyToPublicDependency(
+                      updatedConfig[groupname].dependencies[setname]
+                        .dependencySemvers[dependency.split('@')[0].trim()],
+                    ),
+                  },
+                },
               ),
             ),
           ),

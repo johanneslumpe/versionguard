@@ -26,7 +26,7 @@ import { versionCheckCommand } from './commands/versionCheck';
 import { addApplicationCommands } from './commands/applications';
 import { Logger } from './Logger';
 import { LogMessage } from './LogMessage';
-import { jsonStringifyEither } from '../core/utils';
+import { json5Stringify } from '../core/utils';
 import { VersionGuardError } from '../core/errors';
 import { HandlerResult } from './HandlerResult';
 
@@ -43,10 +43,7 @@ function logOutput({
     json
       ? pipe(
           fromEither(
-            jsonStringifyEither(
-              handlerResult.data,
-              err => err as VersionGuardError,
-            ),
+            json5Stringify(handlerResult.data, err => err as VersionGuardError),
           ),
           chain(str =>
             rightIO(

@@ -4,7 +4,10 @@ import { tryCatch, chain } from 'fp-ts/lib/TaskEither';
 
 import { ArgvWithGlobalOptions } from '../types';
 import { VersionGuardError } from '../../core/errors';
-import { PipeCommandArgs } from '../utils';
+import {
+  PipeCommandArgs,
+  convertCheckResultToPublicCheckResult,
+} from '../utils';
 import { emphasize } from '../../core/utils';
 import { HandlerResult } from '../HandlerResult';
 import { LogMessage } from '../LogMessage';
@@ -64,12 +67,14 @@ export function versionCheckCommand(
                   )} did not meet dependency version requirements`}`,
                 );
               }
-
               return HandlerResult.create(
                 result.result === 'PASS'
                   ? LogMessage.success(`Check passed!`)
                   : LogMessage.warning(`Check tentatively passed!`),
-                result,
+                {
+                  type: 'VERSIONCHECK',
+                  result: convertCheckResultToPublicCheckResult(result),
+                },
               );
             },
             (err: unknown) => err as VersionGuardError,

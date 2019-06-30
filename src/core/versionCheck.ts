@@ -23,7 +23,6 @@ export interface DependencyResult {
   requiredVersion: string;
   result: CheckResultType;
   timeLeftForUpgrade: number;
-  upgradeTimeRemaining?: number;
 }
 
 interface GroupCheckResult {

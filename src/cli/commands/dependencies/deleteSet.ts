@@ -34,12 +34,18 @@ export function deleteDependencySetCommand(
           logger: opts.logger,
         })(config.contents),
         chain(writeConfig(argv.config.path, opts.logger)),
-        map(updatedConfig =>
+        map(() =>
           HandlerResult.create(
             LogMessage.success(
               emphasize`Dependency set ${setname} deleted from group ${groupname}`,
             ),
-            updatedConfig,
+            {
+              type: 'DEPENDENCY_SET:DELETE',
+              result: {
+                group: groupname,
+                dependencySet: setname,
+              },
+            },
           ),
         ),
       );

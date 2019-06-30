@@ -6,7 +6,10 @@ import { emphasize } from '../../../core/utils';
 import { createDependencySetInGroup } from '../../core/dependencies';
 import { HandlerResult } from '../../HandlerResult';
 import { LogMessage } from '../../LogMessage';
-import { PipeCommandArgs } from '../../utils';
+import {
+  PipeCommandArgs,
+  convertInternalDependencyMapToPublicDependencyMap,
+} from '../../utils';
 import { writeConfig } from '../../core/config';
 
 export function createDependencySetCommand(
@@ -39,7 +42,21 @@ export function createDependencySetCommand(
             LogMessage.success(
               emphasize`Dependency set ${setname} created within group ${groupname}`,
             ),
-            updatedConfig,
+            {
+              type: 'DEPENDENCY_SET:CREATE',
+              result: {
+                group: groupname,
+                dependencySet: {
+                  name: setname,
+                  gracePeriod:
+                    updatedConfig[groupname].dependencies[setname].gracePeriod,
+                  dependencies: convertInternalDependencyMapToPublicDependencyMap(
+                    updatedConfig[groupname].dependencies[setname]
+                      .dependencySemvers,
+                  ),
+                },
+              },
+            },
           ),
         ),
       );

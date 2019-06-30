@@ -4,9 +4,17 @@ import Table, { HorizontalTable, CrossTable } from 'cli-table3';
 import { pipe } from 'fp-ts/lib/pipeable';
 import { TaskEither, chain } from 'fp-ts/lib/TaskEither';
 
-import { ArgvWithGlobalOptions } from './types';
+import {
+  ArgvWithGlobalOptions,
+  PublicDependency,
+  PublicGroupResult,
+  PublicApplicationResult,
+  PublicCheckResult,
+} from './types';
 import { Logger } from './Logger';
 import { LogMessage } from './LogMessage';
+import { Dictionary, DependencyConfig } from '../core/types';
+import { CheckResult } from '../core';
 export interface PipeCommandArgs {
   cli: ArgvWithGlobalOptions;
   logger: Logger;
@@ -93,4 +101,60 @@ export function loggableTaskEither<L = never, A = never, B = never>(
       chain(f),
       chain(logger.verboseLogTaskEitherL(onAfter)),
     );
+}
+
+export function convertInternalDependencyToPublicDependency(
+  dep: DependencyConfig,
+): PublicDependency {
+  return {
+    addedAt: dep.dateAdded,
+    semanticVersion: dep.semver,
+  };
+}
+
+export function convertInternalDependencyMapToPublicDependencyMap(
+  deps: Dictionary<DependencyConfig>,
+): Dictionary<PublicDependency> {
+  const publicDependencies: Dictionary<PublicDependency> = {};
+  return Object.entries(deps).reduce((acc, [name, dependency]) => {
+    acc[name] = convertInternalDependencyToPublicDependency(dependency);
+    return acc;
+  }, publicDependencies);
+}
+
+export function convertCheckResultToPublicCheckResult(
+  checkResult: CheckResult,
+): PublicCheckResult {
+  const publicGroupResult: Dictionary<PublicGroupResult> = {};
+  return {
+    groups: Object.entries(checkResult.groupResults).reduce(
+      (acc, [name, groupResult]) => {
+        const appResult: Dictionary<PublicApplicationResult> = {};
+        acc[name] = {
+          status: groupResult.result,
+          applications: Object.entries(groupResult.applicationResults).reduce(
+            (acc, [app, appResult]) => {
+              acc[app] = {
+                status: appResult.result,
+                dependencies: appResult.dependencyResults.map(
+                  dependencyResult => ({
+                    dependency: dependencyResult.dependency,
+                    currentVersion: dependencyResult.currentVersion,
+                    requiredVersion: dependencyResult.requiredVersion,
+                    status: dependencyResult.result,
+                    timeLeftForUpgrade: dependencyResult.timeLeftForUpgrade,
+                  }),
+                ),
+              };
+              return acc;
+            },
+            appResult,
+          ),
+        };
+        return acc;
+      },
+      publicGroupResult,
+    ),
+    status: checkResult.result,
+  };
 }

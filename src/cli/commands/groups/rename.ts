@@ -30,12 +30,18 @@ export function renameGroupCommand(
       argv._asyncResult = pipe(
         renameGroup(oldname, newname, opts.logger)(argv.config.contents),
         chain(writeConfig(argv.config.path, opts.logger)),
-        map(config =>
+        map(() =>
           HandlerResult.create(
             LogMessage.success(
               emphasize`Group ${oldname} renamed to ${newname}!`,
             ),
-            config,
+            {
+              type: 'GROUPS:RENAME',
+              result: {
+                from: oldname,
+                to: newname,
+              },
+            },
           ),
         ),
       );

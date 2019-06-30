@@ -39,12 +39,19 @@ export function removeDependencyCommand(
           logger: opts.logger,
         })(config.contents),
         chain(writeConfig(argv.config.path, opts.logger)),
-        map(updatedConfig =>
+        map(() =>
           HandlerResult.create(
             LogMessage.success(
               emphasize`Dependency ${dependency} successfully removed from set ${setname} within group ${groupname}`,
             ),
-            updatedConfig,
+            {
+              type: 'DEPENDENCY:REMOVE_FROM_SET',
+              result: {
+                group: groupname,
+                dependencySet: setname,
+                dependency,
+              },
+            },
           ),
         ),
       );
